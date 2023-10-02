@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
+from src import database as db
+import sqlalchemy
 
 router = APIRouter(
     prefix="/barrels",
@@ -10,17 +12,22 @@ router = APIRouter(
 
 class Barrel(BaseModel):
     sku: str
-
     ml_per_barrel: int
     potion_type: list[int]
     price: int
-
     quantity: int
 
 @router.post("/deliver")
 def post_deliver_barrels(barrels_delivered: list[Barrel]):
     """ """
-    print(barrels_delivered)
+    for barrel in barrels_delivered:
+        with db.engine.begin() as connection:
+            sql_query = f"""
+            UPDATE global_inventory
+            SET num_red_ml = num_red_ml + {barrel.ml_per_barrel * barrel.quantity}
+            WHERE sku = '{barrel.sku}'
+            """
+            connection.execute(sqlalchemy.text(sql_query))
 
     return "OK"
 
@@ -28,11 +35,22 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
-    print(wholesale_catalog)
+    purchase_plan = []
+    with db.engine.begin() as connection:
+        for barrel in wholesale_catalog:
+            sql_query = f"""SELECT gold FROM global_inventory"""
+            result = connection.execute(sqlalchemy.text(sql_query))
+            gold = result.first().gold
 
-    return [
-        {
-            "sku": "SMALL_RED_BARREL",
-            "quantity": 1,
-        }
-    ]
+            if gold >= barrel.price:
+                purchase_plan.append({
+                    "sku": barrel.sku,
+                    "quantity": 1,
+                })
+                sql_query = f"""
+                UPDATE global_inventory
+                SET gold = gold - {barrel.price}
+                """
+                connection.execute(sqlalchemy.text(sql_query))
+
+    return purchase_plan
