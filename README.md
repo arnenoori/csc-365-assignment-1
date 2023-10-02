@@ -46,7 +46,7 @@ The first version of your improved store will simply keep track of how many red 
 1. Create an account on [Supabase](https://supabase.com/).
 2. We will start with the simplest possible schema: a single row in a single table. Create a new project in Supabase, select the 'Table Editor' on the left-hand navigation menu, and then click the "Create a new table" button. Create a table called `global_inventory`. This table should have columns named `num_red_potions` (int4), `num_red_ml` (int4), and `gold` (int4) to keep track of your current resources.
 3. Insert an initial row in your database and set `num_red_potions` to 0, `num_red_ml` to 0, and `gold` to 100.
-3. Add your database connection details to the environment variables in your Vercel project. Within your Supabase project settings, go to Database -> Connection String -> URI, copy the connection string, and replace `PASSWORD` with your database password. Back in Vercel, add this modified string as a new environment variable named `POSTGRES_URI`.
+3. Add your database connection details to the environment variables in your Render project. Within your Supabase project settings, go to Database -> Connection String -> URI, copy the connection string, and replace `PASSWORD` with your database password. Back in Vercel, add this modified string as a new environment variable named `POSTGRES_URI`.
 
 In your backend repository, establish a connection to your Supabase database using SQLAlchemy, drawing the `POSTGRES_URI` from environment variables. To do so, create a database.py file in your src folder with the following code:
 ```py
@@ -73,7 +73,7 @@ from src import database as db
 And execute SQL in each of your endpoints (barrels.py, bottler.py, carts.py, and catalog.py) as:
 ```py
 with db.engine.begin() as connection:
-        result = connection.execute(sql_to_execute)
+        result = connection.execute(sqlalchemy.text(sql_to_execute))
 ```
 
 You will need to use SELECT and UPDATE sql statements. In this version you won't need to do any INSERTs or DELETEs.
@@ -83,4 +83,9 @@ As a very basic initial logic, purchase a new small red potion barrel only if th
 Once you've finished making your changes, go back to [Consortium of Concotions and Charms](https://potion-exchange.vercel.app/) and click "Burn Shop to Ground!" at the bottom of the page to reset your shop's state back to the beginning.
 
 With the release of this version, you should no longer encounter job errors resulting from attempting to buy barrels without sufficient gold, mix potions without the necessary ml of ingredients, or sell potions not currently in your inventory.
+
+## Version 2 - Selling more than red potions
+
+In this second version of your shop, you need to also make and sell blue and green potions. You will need to come up with your own logic for when to buy red, green, or blue barrels. Your logic does not have to be particularly clever, you just have to make sure at some point your shop is successfully selling red, green, and blue potions. The implementation details from there are completely up to you.
+
 
