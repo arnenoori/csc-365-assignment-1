@@ -18,6 +18,9 @@ def get_catalog():
         result = connection.execute(sqlalchemy.text(sql_query))
         num_red_potions = result.first().num_red_potions
 
+    # Limit the quantity to a maximum of 20
+    num_red_potions = min(num_red_potions, 20)
+
     # Return the catalog with the quantity of red potions
     return [
             {

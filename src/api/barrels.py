@@ -19,13 +19,11 @@ class Barrel(BaseModel):
 
 @router.post("/deliver")
 def post_deliver_barrels(barrels_delivered: list[Barrel]):
-    """ """
     for barrel in barrels_delivered:
         with db.engine.begin() as connection:
             sql_query = f"""
             UPDATE global_inventory
             SET num_red_ml = num_red_ml + {barrel.ml_per_barrel * barrel.quantity}
-            WHERE sku = '{barrel.sku}'
             """
             connection.execute(sqlalchemy.text(sql_query))
 
