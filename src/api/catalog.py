@@ -21,6 +21,10 @@ def get_catalog():
     # Limit the quantity to a maximum of 20
     num_red_potions = min(num_red_potions, 20)
 
+    # If quantity is 0, return an empty array
+    if num_red_potions == 0:
+        return []
+
     # Return the catalog with the quantity of red potions
     return [
             {
