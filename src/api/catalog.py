@@ -19,7 +19,7 @@ def get_catalog():
         num_red_potions = result.first().num_red_potions
 
     # Limit the quantity to a maximum of 20
-    num_red_potions = min(num_red_potions, 20)
+    num_red_potions = max(0, min(num_red_potions, 20))
 
     # If quantity is 0, return an empty array
     if num_red_potions == 0:
