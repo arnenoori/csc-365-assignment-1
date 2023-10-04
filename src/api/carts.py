@@ -62,6 +62,25 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     with db.engine.begin() as connection:
+        # Fetch all items in the cart
+        sql_query = f"""
+        SELECT item_sku, quantity
+        FROM cart_items
+        WHERE cart_id = {cart_id}
+        """
+        result = connection.execute(sqlalchemy.text(sql_query))
+        cart_items = result.fetchall()
+
+        # For each item in the cart, decrease the inventory
+        for item in cart_items:
+            sql_query = f"""
+            UPDATE global_inventory
+            SET num_red_potions = num_red_potions - {item.quantity}
+            WHERE sku = '{item.item_sku}'
+            """
+            connection.execute(sqlalchemy.text(sql_query))
+
+        # Calculate the total price
         sql_query = f"""
         SELECT SUM(quantity * price) as total
         FROM cart_items
@@ -73,12 +92,5 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
 
         if total > cart_checkout.payment:
             raise HTTPException(status_code=400, detail="Insufficient payment")
-
-        # Update inventory after successful checkout
-        sql_query = f"""
-        UPDATE global_inventory
-        SET num_red_potions = num_red_potions - {total}
-        """
-        connection.execute(sqlalchemy.text(sql_query))
 
     return {"total_potions_bought": total, "total_gold_paid": cart_checkout.payment}
