@@ -20,21 +20,11 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     """ """
     for potion in potions_delivered:
         with db.engine.begin() as connection:
-            if potion.potion_type == [100, 0, 0, 0]:  # Red potion
-                sql_query = f"""
-                UPDATE global_inventory
-                SET num_red_potions = num_red_potions + {potion.quantity}
-                """
-            elif potion.potion_type == [0, 100, 0, 0]:  # Blue potion
-                sql_query = f"""
-                UPDATE global_inventory
-                SET num_blue_potions = num_blue_potions + {potion.quantity}
-                """
-            elif potion.potion_type == [0, 0, 100, 0]:  # Green potion
-                sql_query = f"""
-                UPDATE global_inventory
-                SET num_green_potions = num_green_potions + {potion.quantity}
-                """
+            sql_query = f"""
+            UPDATE potions
+            SET quantity = quantity + {potion.quantity}
+            WHERE potion_type = '{potion.potion_type}'
+            """
             connection.execute(sqlalchemy.text(sql_query))
 
     return "OK"
@@ -50,33 +40,17 @@ def get_bottle_plan():
 
     # Initial logic: bottle all barrels into red, blue, and green potions.
     with db.engine.begin() as connection:
-        sql_query = """SELECT num_red_ml, num_blue_ml, num_green_ml FROM global_inventory"""
+        sql_query = """SELECT potion_type, quantity FROM potions"""
         result = connection.execute(sqlalchemy.text(sql_query))
-        num_red_ml, num_blue_ml, num_green_ml = result.first()
+        potions = result.fetchall()
 
-        quantity_red = num_red_ml // 100
-        quantity_blue = num_blue_ml // 100
-        quantity_green = num_green_ml // 100
+        bottle_plan = []
+        for potion in potions:
+            potion_type, quantity = potion
+            if sum(potion_type) == 100 and quantity > 0:
+                bottle_plan.append({
+                    "potion_type": potion_type,
+                    "quantity": quantity,
+                })
 
-        sql_query = f"""
-        UPDATE global_inventory
-        SET num_red_ml = num_red_ml - {quantity_red * 100},
-            num_blue_ml = num_blue_ml - {quantity_blue * 100},
-            num_green_ml = num_green_ml - {quantity_green * 100}
-        """
-        connection.execute(sqlalchemy.text(sql_query))
-
-    return [
-            {
-                "potion_type": [100, 0, 0, 0],
-                "quantity": quantity_red,
-            },
-            {
-                "potion_type": [0, 100, 0, 0],
-                "quantity": quantity_blue,
-            },
-            {
-                "potion_type": [0, 0, 100, 0],
-                "quantity": quantity_green,
-            }
-        ]
+    return bottle_plan

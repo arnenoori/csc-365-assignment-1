@@ -21,25 +21,20 @@ class Barrel(BaseModel):
 def post_deliver_barrels(barrels_delivered: list[Barrel]):
     for barrel in barrels_delivered:
         with db.engine.begin() as connection:
-            if barrel.potion_type == [100, 0, 0, 0]:  # Red barrel
-                sql_query = f"""
-                UPDATE global_inventory
-                SET num_red_ml = num_red_ml + {barrel.ml_per_barrel * barrel.quantity}
-                """
-            elif barrel.potion_type == [0, 100, 0, 0]:  # Blue barrel
-                sql_query = f"""
-                UPDATE global_inventory
-                SET num_blue_ml = num_blue_ml + {barrel.ml_per_barrel * barrel.quantity}
-                """
-            elif barrel.potion_type == [0, 0, 100, 0]:  # Green barrel
-                sql_query = f"""
-                UPDATE global_inventory
-                SET num_green_ml = num_green_ml + {barrel.ml_per_barrel * barrel.quantity}
-                """
-            connection.execute(sqlalchemy.text(sql_query))
+            total_ml = barrel.ml_per_barrel * barrel.quantity
+
+            # Update the global inventory for each potion type
+            for i, potion_percentage in enumerate(barrel.potion_type):
+                if potion_percentage > 0:
+                    potion_ml = total_ml * (potion_percentage / 100)
+                    # Update the global inventory 
+                    sql_query = f"""
+                    UPDATE global_inventory
+                    SET num_potion_{i}_ml = num_potion_{i}_ml + {potion_ml}
+                    """
+                    connection.execute(sqlalchemy.text(sql_query))
 
     return "OK"
-
 
 # Gets called once a day
 @router.post("/plan")

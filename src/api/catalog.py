@@ -14,9 +14,9 @@ def get_catalog():
 
     # Fetch the number of red, blue, and green potions from the database
     with db.engine.begin() as connection:
-        sql_query = """SELECT num_red_potions, num_blue_potions, num_green_potions FROM global_inventory"""
+        sql_query = """SELECT name, potion_type, price, quantity FROM potions"""
         result = connection.execute(sqlalchemy.text(sql_query))
-        num_red_potions, num_blue_potions, num_green_potions = result.first()
+        potions = result.fetchall()
 
     # Limit the quantity to a maximum of 20
     num_red_potions = max(0, min(num_red_potions, 20))

@@ -93,4 +93,11 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         if total > cart_checkout.payment:
             raise HTTPException(status_code=400, detail="Insufficient payment")
 
+        # Update the gold in the global_inventory table
+        sql_query = f"""
+        UPDATE global_inventory
+        SET gold = gold + {cart_checkout.payment}
+        """
+        connection.execute(sqlalchemy.text(sql_query))
+
     return {"total_potions_bought": total, "total_gold_paid": cart_checkout.payment}
