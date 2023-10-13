@@ -21,11 +21,11 @@ def get_inventory():
         # Fetch inventory details
         sql_query = """SELECT potion_id, quantity, ml FROM global_inventory"""
         result = connection.execute(sqlalchemy.text(sql_query))
-        inventory = [dict(row) for row in result.fetchall()]
+        inventory = [dict(zip(result.keys(), row)) for row in result.fetchall()]
         # Fetch quantity of each potion
         sql_query = """SELECT id, name, quantity FROM potions"""
         result = connection.execute(sqlalchemy.text(sql_query))
-        potions = [dict(row) for row in result.fetchall()]
+        potions = [dict(zip(result.keys(), row)) for row in result.fetchall()]
 
     return {"inventory": inventory, "potions": potions}
 
