@@ -19,16 +19,11 @@ class Result(BaseModel):
 def get_inventory():
     with db.engine.begin() as connection:
         # Fetch inventory details
-        sql_query = """SELECT gold from global_inventory"""
+        sql_query = """SELECT potion_id, quantity, ml FROM global_inventory"""
         result = connection.execute(sqlalchemy.text(sql_query))
-        first_result = result.first()
-        inventory = {
-            "potion_id": first_result.potion_id,
-            "quantity": first_result.quantity,
-            "ml": first_result.ml,
-        }
+        inventory = [dict(row) for row in result.fetchall()]
         # Fetch quantity of each potion
-        sql_query = """SELECT name, quantity FROM potions"""
+        sql_query = """SELECT id, name, quantity FROM potions"""
         result = connection.execute(sqlalchemy.text(sql_query))
         potions = [dict(row) for row in result.fetchall()]
 
