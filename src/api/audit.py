@@ -21,8 +21,12 @@ def get_inventory():
         # Fetch inventory details
         sql_query = """SELECT gold from global_inventory"""
         result = connection.execute(sqlalchemy.text(sql_query))
-        inventory = {column: value for column, value in result.first().items()}
-
+        first_result = result.first()
+        inventory = {
+            "potion_id": first_result.potion_id,
+            "quantity": first_result.quantity,
+            "ml": first_result.ml,
+        }
         # Fetch quantity of each potion
         sql_query = """SELECT name, quantity FROM potions"""
         result = connection.execute(sqlalchemy.text(sql_query))

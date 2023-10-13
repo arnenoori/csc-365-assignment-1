@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 class PotionInventory(BaseModel):
-    potion_type: list[int]
+    potion_type: int
     quantity: int
 
 @router.post("/deliver")
@@ -21,9 +21,10 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     for potion in potions_delivered:
         with db.engine.begin() as connection:
             sql_query = f"""
-            UPDATE potions
-            SET quantity = quantity + {potion.quantity}
-            WHERE potion_type = '{potion.potion_type}'
+            UPDATE global_inventory
+            SET quantity = quantity + {potion.quantity}, 
+                ml = ml + {potion.quantity} * 100
+            WHERE potion_id = {potion.potion_type}
             """
             connection.execute(sqlalchemy.text(sql_query))
 
