@@ -11,47 +11,25 @@ def get_catalog():
     """
 
     # Can return a max of 20 items.
-
-    # Fetch the number of red, blue, and green potions from the database
+    # Fetch all potions from the database
     with db.engine.begin() as connection:
         sql_query = """SELECT name, potion_type, price, quantity FROM potions"""
         result = connection.execute(sqlalchemy.text(sql_query))
         potions = result.fetchall()
 
-    # Limit the quantity to a maximum of 20
-    num_red_potions = max(0, min(num_red_potions, 20))
-    num_blue_potions = max(0, min(num_blue_potions, 20))
-    num_green_potions = max(0, min(num_green_potions, 20))
-
-    # If quantity is 0, return an empty array
-    if num_red_potions == 0 and num_blue_potions == 0 and num_green_potions == 0:
-         return []
-
-    # Return the catalog with the quantity of red, blue, and green potions
+    # Generate the catalog dynamically based on the potions in the database
     catalog = []
-    if num_red_potions > 0:
-        catalog.append({
-            "sku": "RED_POTION_0",
-            "name": "red potion",
-            "quantity": num_red_potions,
-            "price": 50,
-            "potion_type": [100, 0, 0, 0],
-        })
-    if num_blue_potions > 0:
-        catalog.append({
-            "sku": "BLUE_POTION_0",
-            "name": "blue potion",
-            "quantity": num_blue_potions,
-            "price": 60,
-            "potion_type": [0, 100, 0, 0],
-        })
-    if num_green_potions > 0:
-        catalog.append({
-            "sku": "GREEN_POTION_0",
-            "name": "green potion",
-            "quantity": num_green_potions,
-            "price": 70,
-            "potion_type": [0, 0, 100, 0],
-        })
+    for potion in potions:
+        # Limit the quantity to a maximum of 20
+        quantity = max(0, min(potion['quantity'], 20))
 
-    return catalog       
+        if quantity > 0:
+            catalog.append({
+                "sku": f"{potion['name'].upper()}_POTION_0",
+                "name": potion['name'],
+                "quantity": quantity,
+                "price": potion['price'],
+                "potion_type": potion['potion_type'],
+            })
+
+    return catalog   
