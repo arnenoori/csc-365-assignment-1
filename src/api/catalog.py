@@ -16,20 +16,18 @@ def get_catalog():
         sql_query = """SELECT name, potion_type, price, quantity FROM potions"""
         result = connection.execute(sqlalchemy.text(sql_query))
         potions = result.fetchall()
+        catalog = []
+        for potion in potions:
+            # Limit the quantity to a maximum of 20
+            quantity = max(0, min(potion[3], 20))
 
-    # Generate the catalog dynamically based on the potions in the database
-    catalog = []
-    for potion in potions:
-        # Limit the quantity to a maximum of 20
-        quantity = max(0, min(potion['quantity'], 20))
+            if quantity > 0:
+                catalog.append({
+                    "sku": f"{potion[0].upper()}_POTION_{potion[1]}",
+                    "name": potion[0],
+                    "quantity": quantity,
+                    "price": potion[2],
+                    "potion_type": potion[1],
+                })
 
-        if quantity > 0:
-            catalog.append({
-                "sku": f"{potion['name'].upper()}_POTION_0",
-                "name": potion['name'],
-                "quantity": quantity,
-                "price": potion['price'],
-                "potion_type": potion['potion_type'],
-            })
-
-    return catalog   
+    return catalog

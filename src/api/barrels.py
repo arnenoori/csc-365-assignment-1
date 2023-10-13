@@ -18,7 +18,7 @@ class Barrel(BaseModel):
     quantity: int
 
 @router.post("/deliver")
-def post_deliver_barrels(barrels_delivered: list[Barrel]):
+def post_deliverundefinedbarrels(barrels_delivered: list[Barrel]):
     for barrel in barrels_delivered:
         with db.engine.begin() as connection:
             total_ml = barrel.ml_per_barrel * barrel.quantity
@@ -30,7 +30,8 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
                     # Update the global inventory 
                     sql_query = f"""
                     UPDATE global_inventory
-                    SET num_potion_{i}_ml = num_potion_{i}_ml + {potion_ml}
+                    SET ml = ml + {potion_ml}, quantity = quantity + {barrel.quantity}
+                    WHERE potion_id = {i}
                     """
                     connection.execute(sqlalchemy.text(sql_query))
 
