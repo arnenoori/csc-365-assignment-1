@@ -60,12 +60,11 @@ class CartCheckout(BaseModel):
     payment: str
 
 @router.post("/{cart_id}/checkout")
-def checkout(cart_id: int, cart_checkout: CartCheckout):
+def checkout_cart(cart_id: int, cart_checkout: CartCheckout):
     with db.engine.begin() as connection:
         # Fetch all items in the cart
         sql_query = f"""
-        SELECT item_sku, quantity
-        FROM cart_items
+        SELECT item_sku, quantity FROM cart_items
         WHERE cart_id = {cart_id}
         """
         result = connection.execute(sqlalchemy.text(sql_query))
@@ -74,9 +73,9 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         # For each item in the cart, decrease the inventory
         for item in cart_items:
             sql_query = f"""
-            UPDATE global_inventory
-            SET num_red_potions = num_red_potions - {item.quantity}
-            WHERE sku = '{item.item_sku}'
+            UPDATE potions
+            SET quantity = quantity - {item.quantity}
+            WHERE name = '{item.item_sku}'
             """
             connection.execute(sqlalchemy.text(sql_query))
 
@@ -84,7 +83,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         sql_query = f"""
         SELECT SUM(quantity * price) as total
         FROM cart_items
-        JOIN items ON cart_items.item_sku = items.sku
+        JOIN potions ON cart_items.item_sku = potions.name
         WHERE cart_id = {cart_id}
         """
         result = connection.execute(sqlalchemy.text(sql_query))

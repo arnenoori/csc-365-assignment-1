@@ -17,12 +17,11 @@ class Result(BaseModel):
 
 @router.get("/inventory")
 def get_inventory():
-    """" """
     with db.engine.begin() as connection:
         # Fetch inventory details
-        sql_query = """SELECT num_red_ml, num_blue_ml, num_green_ml, gold from global_inventory"""
+        sql_query = """SELECT gold from global_inventory"""
         result = connection.execute(sqlalchemy.text(sql_query))
-        inventory = dict(result.first())
+        inventory = {column: value for column, value in result.first().items()}
 
         # Fetch quantity of each potion
         sql_query = """SELECT name, quantity FROM potions"""

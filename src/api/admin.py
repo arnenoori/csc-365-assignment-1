@@ -16,9 +16,16 @@ def reset():
     inventory, and all barrels are removed from inventory. Carts are all reset.
     """
     with db.engine.begin() as connection:
+        # Reset gold in global_inventory
         sql_query = """
         UPDATE global_inventory
-        SET num_red_potions = 0, num_red_ml = 0, gold = 100
+        SET gold = 100
+        """
+        connection.execute(sqlalchemy.text(sql_query))
+        # Reset quantity in potions
+        sql_query = """
+        UPDATE potions
+        SET quantity = 0
         """
         connection.execute(sqlalchemy.text(sql_query))
 
@@ -28,16 +35,20 @@ def reset():
 def get_shop_info():
     """ """
     with db.engine.begin() as connection:
-        sql_query = """SELECT num_red_potions, num_red_ml, gold from global_inventory"""
+        # Fetch gold from global_inventory
+        sql_query = """SELECT gold from global_inventory"""
         result = connection.execute(sqlalchemy.text(sql_query))
-        first_row = result.first()
+        gold = result.first()[0]
+        # Fetch quantity of each potion
+        sql_query = """SELECT name, quantity FROM potions"""
+        result = connection.execute(sqlalchemy.text(sql_query))
+        potions = [dict(row) for row in result.fetchall()]
 
     return {
         "shop_name": "Potion Shop",
         "shop_owner": "Potion Seller",
         "inventory": {
-            "number_of_red_potions": first_row.num_red_potions,
-            "ml_in_red_barrels": first_row.num_red_ml,
-            "gold": first_row.gold
+            "gold": gold,
+            "potions": potions
         }
     }
