@@ -57,7 +57,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
         for barrel in wholesale_catalog:
             # Check if we need this potion type
-            if potion_quantities[barrel.potion_type.index(1)][1] < 10 and gold >= barrel.price:
+            if 1 in barrel.potion_type and potion_quantities[barrel.potion_type.index(1)][1] < 10 and gold >= barrel.price:
                 print(f"Purchasing Barrel: {barrel.sku}")  # trying to see if I'm buying anything
                 purchase_plan.append({
                     "sku": barrel.sku,
