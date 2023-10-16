@@ -18,7 +18,7 @@ class Barrel(BaseModel):
     quantity: int
 
 @router.post("/deliver")
-def post_deliverundefinedbarrels(barrels_delivered: list[Barrel]):
+def post_deliver_barrels(barrels_delivered: list[Barrel]):
     for barrel in barrels_delivered:
         with db.engine.begin() as connection:
             total_ml = barrel.ml_per_barrel * barrel.quantity
