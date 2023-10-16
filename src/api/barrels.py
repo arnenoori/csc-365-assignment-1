@@ -51,7 +51,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         print(f"Gold: {gold}") 
 
         # Fetch the current inventory
-        inventory_query = "SELECT * FROM inventory;"
+        inventory_query = "SELECT * FROM global_inventory;"
         inventory_result = connection.execute(sqlalchemy.text(inventory_query))
         inventory = inventory_result.fetchall()
 
