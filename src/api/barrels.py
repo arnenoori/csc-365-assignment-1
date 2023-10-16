@@ -50,14 +50,14 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         gold = gold_result.first().gold
         print(f"Gold: {gold}") 
 
-        # Fetch the current inventory
-        inventory_query = "SELECT * FROM global_inventory;"
-        inventory_result = connection.execute(sqlalchemy.text(inventory_query))
-        inventory = inventory_result.fetchall()
+        # Fetch the current potion quantities
+        potion_quantity_query = "SELECT potion_type, quantity FROM potions;"
+        potion_quantity_result = connection.execute(sqlalchemy.text(potion_quantity_query))
+        potion_quantities = potion_quantity_result.fetchall()
 
         for barrel in wholesale_catalog:
             # Check if we need this potion type
-            if inventory[barrel.potion_type.index(1)] < 10 and gold >= barrel.price:
+            if potion_quantities[barrel.potion_type.index(1)][1] < 10 and gold >= barrel.price:
                 print(f"Purchasing Barrel: {barrel.sku}")  # trying to see if I'm buying anything
                 purchase_plan.append({
                     "sku": barrel.sku,
