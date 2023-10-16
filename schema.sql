@@ -9,6 +9,8 @@ CREATE TABLE public.global_inventory (
     num_dark_ml INTEGER NULL DEFAULT 0
 )
 
+-- Version 3:
+
 -- cart_items table
 CREATE TABLE cart_items (
     item_sku TEXT,
@@ -31,12 +33,24 @@ CREATE TABLE public.catalog (
     sku TEXT NOT NULL,
     name TEXT NOT NULL,
     price BIGINT NULL,
+    ml_per_barrel BIGINT NULL,
     num_red_ml BIGINT NULL,
     num_green_ml BIGINT NULL,
     num_blue_ml BIGINT NULL,
     num_dark_ml BIGINT NULL,
     quantity BIGINT NULL
 )
+
+-- deliveries table
+CREATE TABLE public.deliveries (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    catalog_id BIGINT NOT NULL,
+    quantity BIGINT NOT NULL,
+    FOREIGN KEY (catalog_id) REFERENCES catalog(id)
+)
+
+-- Version 4:
 
 -- inventory_transactions table
 CREATE TABLE inventory_transactions (

@@ -21,21 +21,13 @@ class Barrel(BaseModel):
 def post_deliver_barrels(barrels_delivered: list[Barrel]):
     for barrel in barrels_delivered:
         with db.engine.begin() as connection:
-            if barrel.potion_type == [100, 0, 0, 0]:  # Red barrel
-                sql_query = f"""
-                UPDATE global_inventory
-                SET num_red_ml = num_red_ml + {barrel.ml_per_barrel * barrel.quantity}
-                """
-            elif barrel.potion_type == [0, 100, 0, 0]:  # Blue barrel
-                sql_query = f"""
-                UPDATE global_inventory
-                SET num_blue_ml = num_blue_ml + {barrel.ml_per_barrel * barrel.quantity}
-                """
-            elif barrel.potion_type == [0, 0, 100, 0]:  # Green barrel
-                sql_query = f"""
-                UPDATE global_inventory
-                SET num_green_ml = num_green_ml + {barrel.ml_per_barrel * barrel.quantity}
-                """
+            sql_query = f"""
+            UPDATE global_inventory
+            SET num_red_ml = num_red_ml + {barrel.potion_type[0] * barrel.ml_per_barrel * barrel.quantity},
+                num_green_ml = num_green_ml + {barrel.potion_type[1] * barrel.ml_per_barrel * barrel.quantity},
+                num_blue_ml = num_blue_ml + {barrel.potion_type[2] * barrel.ml_per_barrel * barrel.quantity},
+                num_dark_ml = num_dark_ml + {barrel.potion_type[3] * barrel.ml_per_barrel * barrel.quantity}
+            """
             connection.execute(sqlalchemy.text(sql_query))
 
     return "OK"
@@ -44,13 +36,13 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 # Gets called once a day
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
-    """ """
     purchase_plan = []
     with db.engine.begin() as connection:
         for barrel in wholesale_catalog:
-            sql_query = f"""SELECT gold FROM global_inventory"""
+            sql_query = f"""SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
             result = connection.execute(sqlalchemy.text(sql_query))
-            gold = result.first().gold
+            inventory = result.first()
+            gold, red_ml, green_ml, blue_ml, dark_ml = inventory
 
             if gold >= barrel.price:
                 purchase_plan.append({
@@ -59,8 +51,25 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 })
                 sql_query = f"""
                 UPDATE global_inventory
-                SET gold = gold - {barrel.price}
+                SET gold = gold - {barrel.price},
+                    num_red_ml = num_red_ml - {barrel.potion_type[0] * barrel.ml_per_barrel},
+                    num_green_ml = num_green_ml - {barrel.potion_type[1] * barrel.ml_per_barrel},
+                    num_blue_ml = num_blue_ml - {barrel.potion_type[2] * barrel.ml_per_barrel},
+                    num_dark_ml = num_dark_ml - {barrel.potion_type[3] * barrel.ml_per_barrel}
                 """
                 connection.execute(sqlalchemy.text(sql_query))
 
     return purchase_plan
+
+""""
+
+[Barrel(sku='SMALL_RED_BARREL', ml_per_barrel=500, potion_type=[1, 0, 0, 0], price=100, quantity=1) 
+Barrel(sku='MINI_RED_BARREL', ml_per_barrel=200, potion_type=[1, 0, 0, 0], price=60, quantity=1)
+
+Barrel(sku='SMALL_BLUE_BARREL', ml_per_barrel=500, potion_type=[0, 0, 1, 0], price=120, quantity=1)
+Barrel(sku='MINI_BLUE_BARREL', ml_per_barrel=200, potion_type=[0, 0, 1, 0], price=60, quantity=1)]
+
+Barrel(sku='SMALL_GREEN_BARREL', ml_per_barrel=500, potion_type=[0, 1, 0, 0], price=100, quantity=1) 
+Barrel(sku='MINI_GREEN_BARREL', ml_per_barrel=200, potion_type=[0, 1, 0, 0], price=60, quantity=1) 
+    
+"""

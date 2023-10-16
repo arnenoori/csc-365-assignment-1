@@ -42,15 +42,17 @@ def get_cart(cart_id: int):
     return cart
 
 class CartItem(BaseModel):
+    item_sku: str
     quantity: int
 
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     with db.engine.begin() as connection:
         sql_query = f"""
-        UPDATE cart_items
+        INSERT INTO cart_items (cart_id, item_sku, quantity)
+        VALUES ({cart_id}, '{item_sku}', {cart_item.quantity})
+        ON CONFLICT (cart_id, item_sku) DO UPDATE
         SET quantity = {cart_item.quantity}
-        WHERE cart_id = {cart_id} AND item_sku = '{item_sku}'
         """
         connection.execute(sqlalchemy.text(sql_query))
 
@@ -75,8 +77,8 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         for item in cart_items:
             sql_query = f"""
             UPDATE global_inventory
-            SET num_red_potions = num_red_potions - {item.quantity}
-            WHERE sku = '{item.item_sku}'
+            SET num_red_ml = num_red_ml - (SELECT quantity * ml_per_barrel FROM catalog WHERE sku = '{item.item_sku}')
+            WHERE id = 1
             """
             connection.execute(sqlalchemy.text(sql_query))
 
@@ -84,7 +86,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         sql_query = f"""
         SELECT SUM(quantity * price) as total
         FROM cart_items
-        JOIN items ON cart_items.item_sku = items.sku
+        JOIN catalog ON cart_items.item_sku = catalog.sku
         WHERE cart_id = {cart_id}
         """
         result = connection.execute(sqlalchemy.text(sql_query))

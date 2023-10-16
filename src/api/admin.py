@@ -18,7 +18,7 @@ def reset():
     with db.engine.begin() as connection:
         sql_query = """
         UPDATE global_inventory
-        SET num_red_potions = 0, num_red_ml = 0, gold = 100
+        SET num_red_ml = 0, num_green_ml = 0, num_blue_ml = 0, num_dark_ml = 0, gold = 100
         """
         connection.execute(sqlalchemy.text(sql_query))
 
@@ -28,7 +28,7 @@ def reset():
 def get_shop_info():
     """ """
     with db.engine.begin() as connection:
-        sql_query = """SELECT num_red_potions, num_red_ml, gold from global_inventory"""
+        sql_query = """SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, gold from global_inventory"""
         result = connection.execute(sqlalchemy.text(sql_query))
         first_row = result.first()
 
@@ -36,8 +36,10 @@ def get_shop_info():
         "shop_name": "Potion Shop",
         "shop_owner": "Potion Seller",
         "inventory": {
-            "number_of_red_potions": first_row.num_red_potions,
             "ml_in_red_barrels": first_row.num_red_ml,
+            "ml_in_green_barrels": first_row.num_green_ml,
+            "ml_in_blue_barrels": first_row.num_blue_ml,
+            "ml_in_dark_barrels": first_row.num_dark_ml,
             "gold": first_row.gold
         }
     }

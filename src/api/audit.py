@@ -19,11 +19,17 @@ class Result(BaseModel):
 def get_inventory():
     """ """
     with db.engine.begin() as connection:
-        sql_query = """SELECT num_red_potions, num_red_ml, gold from global_inventory"""
+        sql_query = """SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml from global_inventory"""
         result = connection.execute(sqlalchemy.text(sql_query))
         first_row = result.first()
 
-    return {"number_of_red_potions": first_row.num_red_potions, "ml_in_red_barrels": first_row.num_red_ml, "gold": first_row.gold}
+    return {
+        "gold": first_row.gold,
+        "ml_in_red_barrels": first_row.num_red_ml,
+        "ml_in_green_barrels": first_row.num_green_ml,
+        "ml_in_blue_barrels": first_row.num_blue_ml,
+        "ml_in_dark_barrels": first_row.num_dark_ml
+    }
 
 # Gets called once a day
 @router.post("/results")
