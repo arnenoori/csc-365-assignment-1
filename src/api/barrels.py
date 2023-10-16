@@ -44,22 +44,14 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(f"Wholesale Catalog: {wholesale_catalog}") 
     purchase_plan = []
     with db.engine.begin() as connection:
-        # Fetch the gold_id first
-        gold_id_query = "SELECT id FROM global_inventory WHERE name = 'gold';"
-        gold_id_result = connection.execute(sqlalchemy.text(gold_id_query))
-        gold_id = gold_id_result.first().id
-        print(f"Gold ID: {gold_id}") 
+        # Fetch the gold first
+        gold_query = "SELECT gold FROM global_inventory WHERE id = 1;"
+        gold_result = connection.execute(sqlalchemy.text(gold_query))
+        gold = gold_result.first().gold
+        print(f"Gold: {gold}") 
 
         for barrel in wholesale_catalog:
-            sql_query = """
-            SELECT SUM(change) AS gold
-            FROM inventory_ledger_entries
-            WHERE inventory_id = :gold_id;
-            """
-            result = connection.execute(sqlalchemy.text(sql_query), {"gold_id": gold_id})
-            gold = result.first().gold
-            print(f"Gold: {gold}") 
-            if gold >= barrel.price:
+            if gold > barrel.price:
                 print(f"Purchasing Barrel: {barrel.sku}")  # trying to see if I'm buying anything
                 purchase_plan.append({
                     "sku": barrel.sku,
@@ -70,8 +62,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 VALUES ('Purchased {barrel.sku} for {barrel.price} gold');
 
                 INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
-                VALUES (:gold_id, (SELECT id FROM inventory_transactions ORDER BY id DESC LIMIT 1), -{barrel.price});
+                VALUES (1, (SELECT id FROM inventory_transactions ORDER BY id DESC LIMIT 1), -{barrel.price});
                 """
-                connection.execute(sqlalchemy.text(sql_query), {"gold_id": gold_id})
+                connection.execute(sqlalchemy.text(sql_query))
+                gold -= barrel.price  # Update the gold amount
 
     return purchase_plan
