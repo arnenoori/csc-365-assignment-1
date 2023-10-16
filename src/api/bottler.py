@@ -19,12 +19,14 @@ class PotionInventory(BaseModel):
 def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     """ """
     for potion in potions_delivered:
+        # Insert a new transaction and ledger entry
         with db.engine.begin() as connection:
             sql_query = f"""
-            UPDATE global_inventory
-            SET quantity = quantity + {potion.quantity}, 
-                ml = ml + {potion.quantity} * 100
-            WHERE potion_id = {potion.potion_type}
+            INSERT INTO inventory_transactions (description)
+            VALUES ('Delivered {potion.quantity} of potion type {potion.potion_type}');
+
+            INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
+            VALUES ({potion.potion_type}, (SELECT id FROM inventory_transactions ORDER BY id DESC LIMIT 1), {potion.quantity});
             """
             connection.execute(sqlalchemy.text(sql_query))
 
@@ -41,7 +43,12 @@ def get_bottle_plan():
 
     # Initial logic: bottle all barrels into red, blue, and green potions.
     with db.engine.begin() as connection:
-        sql_query = """SELECT potion_type, quantity FROM potions"""
+        sql_query = """
+        SELECT p.potion_type, SUM(ile.change) AS quantity
+        FROM inventory_ledger_entries ile
+        JOIN potions p ON ile.inventory_id = p.id
+        GROUP BY p.potion_type;
+        """
         result = connection.execute(sqlalchemy.text(sql_query))
         potions = result.fetchall()
 
@@ -55,3 +62,5 @@ def get_bottle_plan():
                 })
 
     return bottle_plan
+
+

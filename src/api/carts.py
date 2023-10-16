@@ -73,9 +73,13 @@ def checkout_cart(cart_id: int, cart_checkout: CartCheckout):
         # For each item in the cart, decrease the inventory
         for item in cart_items:
             sql_query = f"""
-            UPDATE potions
-            SET quantity = quantity - {item.quantity}
-            WHERE name = '{item.item_sku}'
+            INSERT INTO inventory_transactions (description)
+            VALUES ('Sold {item.quantity} of {item.item_sku}');
+
+            INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
+            VALUES ((SELECT id FROM potions WHERE name = '{item.item_sku}'), 
+                    (SELECT id FROM inventory_transactions ORDER BY id DESC LIMIT 1), 
+                    -{item.quantity});
             """
             connection.execute(sqlalchemy.text(sql_query))
 
@@ -94,8 +98,13 @@ def checkout_cart(cart_id: int, cart_checkout: CartCheckout):
 
         # Update the gold in the global_inventory table
         sql_query = f"""
-        UPDATE global_inventory
-        SET gold = gold + {cart_checkout.payment}
+        INSERT INTO inventory_transactions (description)
+        VALUES ('Received {cart_checkout.payment} gold from cart {cart_id}');
+
+        INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
+        VALUES ((SELECT id FROM global_inventory WHERE name = 'gold'), 
+                (SELECT id FROM inventory_transactions ORDER BY id DESC LIMIT 1), 
+                {cart_checkout.payment});
         """
         connection.execute(sqlalchemy.text(sql_query))
 

@@ -18,16 +18,16 @@ class Result(BaseModel):
 @router.get("/inventory")
 def get_inventory():
     with db.engine.begin() as connection:
-        # Fetch inventory details
-        sql_query = """SELECT potion_id, quantity, ml FROM global_inventory"""
+        sql_query = """
+        SELECT i.id, SUM(ile.change) AS quantity
+        FROM global_inventory i
+        JOIN inventory_ledger_entries ile ON i.id = ile.inventory_id
+        GROUP BY i.id;
+        """
         result = connection.execute(sqlalchemy.text(sql_query))
-        inventory = [dict(zip(result.keys(), row)) for row in result.fetchall()]
-        # Fetch quantity of each potion
-        sql_query = """SELECT id, name, quantity FROM potions"""
-        result = connection.execute(sqlalchemy.text(sql_query))
-        potions = [dict(zip(result.keys(), row)) for row in result.fetchall()]
+        inventory = result.fetchall()
 
-    return {"inventory": inventory, "potions": potions}
+    return inventory
 
 # Gets called once a day
 @router.post("/results")
