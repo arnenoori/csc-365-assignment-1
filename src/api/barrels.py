@@ -61,11 +61,11 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 return barrel.ml_per_barrel  # assuming one barrel is bought, so not multiplying by quantity
         return 0
 
-    if red_ml < 500:
+    if red_ml < 500 and gold > 0:
         red_ml += buy_potion([1, 0, 0, 0], 500 - red_ml)
-    if green_ml < 500:
+    if green_ml < 500 and gold > 0:
         green_ml += buy_potion([0, 1, 0, 0], 500 - green_ml)
-    if blue_ml < 500:
+    if blue_ml < 500 and gold > 0:
         blue_ml += buy_potion([0, 0, 1, 0], 500 - blue_ml)
 
     # handles the case where any potion is less than 100ml
@@ -74,7 +74,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     ml_values = [red_ml, green_ml, blue_ml]  # current ml values of potions
 
     for i, potion in enumerate(potions):
-        if ml_values[i] < 100:
+        if ml_values[i] < 100 and gold > 0:
             for barrel in sorted(wholesale_catalog, key=lambda x: x.ml_per_barrel):  # smallest barrel first
                 if barrel.potion_type == potion and gold >= barrel.price:
                     purchase_plan.append({"sku": barrel.sku, "quantity": 1})
