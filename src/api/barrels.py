@@ -51,13 +51,14 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         gold, red_ml, green_ml, blue_ml, dark_ml = inventory
 
     purchase_plan = []
+
     def buy_potion(potion_type, ml_needed):
         nonlocal gold
         for barrel in wholesale_catalog:
             if barrel.potion_type == potion_type and barrel.price <= gold:
-                gold -= barrel.price * barrel.quantity
-                purchase_plan.append({"sku": barrel.sku, "quantity": barrel.quantity})
-                return barrel.ml_per_barrel * barrel.quantity
+                gold -= barrel.price  # buying only one barrel for now
+                purchase_plan.append({"sku": barrel.sku, "quantity": 1})  # quantity is set to 1
+                return barrel.ml_per_barrel  # assuming one barrel is bought, so not multiplying by quantity
         return 0
 
     if red_ml < 500:
@@ -67,6 +68,20 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     if blue_ml < 500:
         blue_ml += buy_potion([0, 0, 1, 0], 500 - blue_ml)
 
+    # handles the case where any potion is less than 100ml
+    # and buys the smallest available barrel that the remaining gold can afford.
+    potions = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]  # red, green, blue
+    ml_values = [red_ml, green_ml, blue_ml]  # current ml values of potions
+
+    for i, potion in enumerate(potions):
+        if ml_values[i] < 100:
+            for barrel in sorted(wholesale_catalog, key=lambda x: x.ml_per_barrel):  # smallest barrel first
+                if barrel.potion_type == potion and gold >= barrel.price:
+                    purchase_plan.append({"sku": barrel.sku, "quantity": 1})
+                    gold -= barrel.price
+                    break  # break after buying one barrel
+
+    # Update the inventory after all purchases
     with db.engine.begin() as connection:
         sql_query = f"""
         UPDATE global_inventory
@@ -78,7 +93,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         """
         connection.execute(sqlalchemy.text(sql_query))
 
-    return {"gold": gold, "red_ml": red_ml, "green_ml": green_ml, "blue_ml": blue_ml, "dark_ml": dark_ml, "purchase_plan": purchase_plan}
+    return purchase_plan  # returning the purchase plan instead of the inventory statuses
+
 '''
 Barrel(sku='SMALL_BLUE_BARREL', ml_per_barrel=500, potion_type=[0, 0, 1, 0], price=120, quantity=1)
 Barrel(sku='MINI_BLUE_BARREL', ml_per_barrel=200, potion_type=[0, 0, 1, 0], price=60, quantity=1)]
