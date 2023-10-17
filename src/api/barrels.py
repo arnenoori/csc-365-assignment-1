@@ -50,27 +50,22 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     else:
         gold, red_ml, green_ml, blue_ml, dark_ml = inventory
 
+    purchase_plan = []
     def buy_potion(potion_type, ml_needed):
         nonlocal gold
         for barrel in wholesale_catalog:
             if barrel.potion_type == potion_type and barrel.price <= gold:
                 gold -= barrel.price * barrel.quantity
-                return barrel.sku, barrel.quantity
-        return None, 0
+                purchase_plan.append({"sku": barrel.sku, "quantity": barrel.quantity})
+                return barrel.ml_per_barrel * barrel.quantity
+        return 0
 
-    purchase_plan = []
     if red_ml < 500:
-        sku, quantity = buy_potion([1, 0, 0, 0], 500 - red_ml)
-        if sku:
-            purchase_plan.append({"sku": sku, "quantity": quantity})
+        red_ml += buy_potion([1, 0, 0, 0], 500 - red_ml)
     if green_ml < 500:
-        sku, quantity = buy_potion([0, 1, 0, 0], 500 - green_ml)
-        if sku:
-            purchase_plan.append({"sku": sku, "quantity": quantity})
+        green_ml += buy_potion([0, 1, 0, 0], 500 - green_ml)
     if blue_ml < 500:
-        sku, quantity = buy_potion([0, 0, 1, 0], 500 - blue_ml)
-        if sku:
-            purchase_plan.append({"sku": sku, "quantity": quantity})
+        blue_ml += buy_potion([0, 0, 1, 0], 500 - blue_ml)
 
     with db.engine.begin() as connection:
         sql_query = f"""
@@ -83,7 +78,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         """
         connection.execute(sqlalchemy.text(sql_query))
 
-    return purchase_plan
+    return {"gold": gold, "red_ml": red_ml, "green_ml": green_ml, "blue_ml": blue_ml, "dark_ml": dark_ml, "purchase_plan": purchase_plan}
 '''
 Barrel(sku='SMALL_BLUE_BARREL', ml_per_barrel=500, potion_type=[0, 0, 1, 0], price=120, quantity=1)
 Barrel(sku='MINI_BLUE_BARREL', ml_per_barrel=200, potion_type=[0, 0, 1, 0], price=60, quantity=1)]
