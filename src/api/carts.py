@@ -103,7 +103,10 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             WHERE sku = :item_sku
             """
             result = connection.execute(sqlalchemy.text(sql_query), {"item_sku": item_sku})
-            total_gold_paid += result.first().price * quantity
+            item = result.first()
+            if item is None:
+                raise HTTPException(status_code=404, detail=f"Item with SKU {item_sku} not found in catalog")
+            total_gold_paid += item.price * quantity
             total_potions_bought += quantity
 
             # Decrease quantity in catalog table
