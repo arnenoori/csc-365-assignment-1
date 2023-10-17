@@ -20,6 +20,10 @@ class Barrel(BaseModel):
 @router.post("/deliver")
 def post_deliver_barrels(barrels_delivered: list[Barrel]):
     for barrel in barrels_delivered:
+        # Ensure potion_type has 4 elements
+        while len(barrel.potion_type) < 4:
+            barrel.potion_type.append(0)
+
         with db.engine.begin() as connection:
             sql_query = f"""
             UPDATE global_inventory
