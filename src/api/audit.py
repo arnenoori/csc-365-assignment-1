@@ -25,7 +25,7 @@ def get_inventory():
 
     if first_row is None:
         return {
-            "gold": 0,
+            "gold": 100,
             "ml_in_red_barrels": 0,
             "ml_in_green_barrels": 0,
             "ml_in_blue_barrels": 0,

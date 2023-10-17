@@ -35,19 +35,19 @@ def get_shop_info():
 
     if first_row is None:
         return {
-            "shop_name": "Potion Shop",
+            "shop_name": "The Enchanted Elixir Emporium",
             "shop_owner": "Potion Seller",
             "inventory": {
                 "ml_in_red_barrels": 0,
                 "ml_in_green_barrels": 0,
                 "ml_in_blue_barrels": 0,
                 "ml_in_dark_barrels": 0,
-                "gold": 0
+                "gold": 100
             }
         }
 
     return {
-        "shop_name": "Potion Shop",
+        "shop_name": "The Enchanted Elixir Emporium",
         "shop_owner": "Potion Seller",
         "inventory": {
             "ml_in_red_barrels": first_row.num_red_ml,
