@@ -37,7 +37,7 @@ def get_cart(cart_id: int):
         WHERE carts.id = {cart_id}
         """
         result = connection.execute(sqlalchemy.text(sql_query))
-        cart = [dict(row) for row in result]
+        cart = [row._asdict() for row in result]
 
         if not cart:
             raise HTTPException(status_code=404, detail="Cart not found")
