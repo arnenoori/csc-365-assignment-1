@@ -18,6 +18,7 @@ class Barrel(BaseModel):
     quantity: int
 
 @router.post("/deliver")
+# Works
 def post_deliver_barrels(barrels_delivered: list[Barrel]):
     for barrel in barrels_delivered:
         # Ensure potion_type has 4 elements
@@ -39,6 +40,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 
 # Gets called once a day
 @router.post("/plan")
+# Works
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     purchase_plan = []
     with db.engine.begin() as connection:

@@ -10,6 +10,7 @@ router = APIRouter(
 )
 
 @router.post("/reset")
+# Works
 def reset():
     """
     Reset the game state. Gold goes to 100, all potions are removed from
@@ -31,6 +32,19 @@ def get_shop_info():
         sql_query = """SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, gold from global_inventory"""
         result = connection.execute(sqlalchemy.text(sql_query))
         first_row = result.first()
+
+    if first_row is None:
+        return {
+            "shop_name": "Potion Shop",
+            "shop_owner": "Potion Seller",
+            "inventory": {
+                "ml_in_red_barrels": 0,
+                "ml_in_green_barrels": 0,
+                "ml_in_blue_barrels": 0,
+                "ml_in_dark_barrels": 0,
+                "gold": 0
+            }
+        }
 
     return {
         "shop_name": "Potion Shop",
