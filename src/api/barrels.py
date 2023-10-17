@@ -45,31 +45,26 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         sql_query = """SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
         inventory = connection.execute(sqlalchemy.text(sql_query)).first()
 
-    # If inventory is None, initialize it with zero values
     if inventory is None:
         gold, red_ml, green_ml, blue_ml, dark_ml = 0, 0, 0, 0, 0
     else:
         gold, red_ml, green_ml, blue_ml, dark_ml = inventory
 
-    # Function to buy potion barrels
     def buy_potion(potion_type, ml_needed):
         nonlocal gold
         for barrel in wholesale_catalog:
             if barrel.potion_type == potion_type and barrel.price <= gold:
-                # Purchase the barrel
-                gold -= barrel.price
-                return barrel.ml_per_barrel
+                gold -= barrel.price * barrel.quantity
+                return barrel.ml_per_barrel * barrel.quantity
         return 0
 
-    # Check if the number of red, green, or blue potions is less than 5
-    if red_ml < 500:  # 1000 ml corresponds to 10 potions
+    if red_ml < 500:
         red_ml += buy_potion([1, 0, 0, 0], 500 - red_ml)
     if green_ml < 500:
         green_ml += buy_potion([0, 1, 0, 0], 500 - green_ml)
     if blue_ml < 500:
         blue_ml += buy_potion([0, 0, 1, 0], 500 - blue_ml)
 
-    # Update the global_inventory table
     with db.engine.begin() as connection:
         sql_query = f"""
         UPDATE global_inventory
