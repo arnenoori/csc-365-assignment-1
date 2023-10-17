@@ -29,7 +29,6 @@ def create_cart(new_cart: NewCart):
 
 @router.get("/{cart_id}")
 def get_cart(cart_id: int):
-    # Doesn't work
     with db.engine.begin() as connection:
         sql_query = f"""
         SELECT carts.id, carts.customer, cart_items.item_sku, cart_items.quantity
@@ -38,7 +37,7 @@ def get_cart(cart_id: int):
         WHERE carts.id = {cart_id}
         """
         result = connection.execute(sqlalchemy.text(sql_query))
-        cart = result.fetchall()
+        cart = [dict(row) for row in result]
 
         if not cart:
             raise HTTPException(status_code=404, detail="Cart not found")
