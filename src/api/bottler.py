@@ -24,6 +24,10 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
         catalog = connection.execute(sqlalchemy.text(sql_query)).fetchall()
 
         for potion in potions_delivered:
+
+            if len(potion.potion_type) != 4:
+                return f"Error: potion.potion_type must contain exactly four elements, but got {len(potion.potion_type)}"
+
             red_ml, green_ml, blue_ml, dark_ml = potion.potion_type
             sku = name = f"{red_ml}_{green_ml}_{blue_ml}_{dark_ml}"
             quantity = potion.quantity

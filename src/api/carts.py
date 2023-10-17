@@ -51,12 +51,28 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     with db.engine.begin() as connection:
+        # Check if the item already exists in the cart
         sql_query = f"""
-        INSERT INTO cart_items (cart_id, item_sku, quantity)
-        VALUES ({cart_id}, '{item_sku}', {cart_item.quantity})
-        ON CONFLICT (cart_id, item_sku) DO UPDATE
-        SET quantity = {cart_item.quantity}
+        SELECT 1 FROM cart_items
+        WHERE cart_id = {cart_id} AND item_sku = '{item_sku}'
         """
+        result = connection.execute(sqlalchemy.text(sql_query))
+        item_exists = result.scalar() is not None
+
+        if item_exists:
+            # If the item exists, update the quantity
+            sql_query = f"""
+            UPDATE cart_items
+            SET quantity = {cart_item.quantity}
+            WHERE cart_id = {cart_id} AND item_sku = '{item_sku}'
+            """
+        else:
+            # If the item doesn't exist, insert a new record
+            sql_query = f"""
+            INSERT INTO cart_items (cart_id, item_sku, quantity)
+            VALUES ({cart_id}, '{item_sku}', {cart_item.quantity})
+            """
+
         connection.execute(sqlalchemy.text(sql_query))
 
     return "OK"
