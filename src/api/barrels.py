@@ -42,6 +42,16 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             sql_query = f"""SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
             result = connection.execute(sqlalchemy.text(sql_query))
             inventory = result.first()
+
+            if inventory is None:
+                return {
+                    "gold": 0,
+                    "num_red_ml": 0,
+                    "num_green_ml": 0,
+                    "num_blue_ml": 0,
+                    "num_dark_ml": 0
+                }
+
             gold, red_ml, green_ml, blue_ml, dark_ml = inventory
 
             if gold >= barrel.price:

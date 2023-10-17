@@ -1,74 +1,82 @@
 -- global_inventory table
-CREATE TABLE public.global_inventory (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    gold INTEGER NULL DEFAULT 100,
-    num_red_ml INTEGER NULL DEFAULT 0,
-    num_green_ml INTEGER NULL DEFAULT 0,
-    num_blue_ml INTEGER NULL DEFAULT 0,
-    num_dark_ml INTEGER NULL DEFAULT 0
-)
+create table
+  public.global_inventory (
+    id bigint generated always as identity primary key,
+    created_at timestamp with time zone not null default now(),
+    gold integer null default 100,
+    num_red_ml integer null default 0,
+    num_green_ml integer null default 0,
+    num_blue_ml integer null default 0,
+    num_dark_ml integer null default 0
+  );
 
 -- Version 3:
 
 -- cart_items table
-CREATE TABLE cart_items (
-    item_sku TEXT,
-    quantity INT,
-    cart_id INT,
-    CONSTRAINT cart_items_fkey FOREIGN KEY (cart_id) REFERENCES carts(id)
-);
+create table 
+  public.cart_items (
+    item_sku text,
+    quantity integer,
+    cart_id integer,
+    constraint cart_items_fkey foreign key (cart_id) references carts(id)
+  );
 
 -- carts table
-CREATE TABLE carts (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    customer TEXT
-);
+create table 
+  public.carts (
+    id bigint generated always as identity primary key,
+    created_at timestamp with time zone not null default now(),
+    customer text
+  );
 
 -- catalog table
-CREATE TABLE public.catalog (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    sku TEXT NOT NULL,
-    name TEXT NOT NULL,
-    price BIGINT NULL,
-    ml_per_barrel BIGINT NULL,
-    num_red_ml BIGINT NULL,
-    num_green_ml BIGINT NULL,
-    num_blue_ml BIGINT NULL,
-    num_dark_ml BIGINT NULL,
-    quantity BIGINT NULL
-)
+create table 
+  public.catalog (
+    id bigint generated always as identity primary key,
+    created_at timestamp with time zone not null default now(),
+    sku text not null,
+    name text not null,
+    price bigint null,
+    ml_per_barrel bigint null,
+    num_red_ml bigint null,
+    num_green_ml bigint null,
+    num_blue_ml bigint null,
+    num_dark_ml bigint null,
+    quantity bigint null
+  );
 
 -- deliveries table
-CREATE TABLE public.deliveries (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    catalog_id BIGINT NOT NULL,
-    quantity BIGINT NOT NULL,
-    FOREIGN KEY (catalog_id) REFERENCES catalog(id)
-)
+create table 
+  public.deliveries (
+    id bigint generated always as identity primary key,
+    created_at timestamp with time zone not null default now(),
+    catalog_id bigint not null,
+    quantity bigint not null,
+    foreign key (catalog_id) references catalog(id)
+  );
 
 -- Version 4:
 
 -- inventory_transactions table
-CREATE TABLE inventory_transactions (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT current_timestamp,
-    description TEXT
-);
+create table 
+  public.inventory_transactions (
+    id bigint generated always as identity primary key,
+    created_at timestamp with time zone not null default current_timestamp,
+    description text
+  );
 
 -- inventory_ledger_entries table
-CREATE TABLE inventory_ledger_entries (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    inventory_id INT,
-    transaction_id INT,
-    change INT,
-    FOREIGN KEY (inventory_id) REFERENCES global_inventory (id),
-    FOREIGN KEY (transaction_id) REFERENCES inventory_transactions (id)
-);
+create table 
+  public.inventory_ledger_entries (
+    id bigint generated always as identity primary key,
+    inventory_id integer,
+    transaction_id integer,
+    change integer,
+    foreign key (inventory_id) references global_inventory (id),
+    foreign key (transaction_id) references inventory_transactions (id)
+  );
 
 -- Adding a foreign key to the global_inventory table
-ALTER TABLE global_inventory
-ADD FOREIGN KEY (potion_id) REFERENCES potions(id);
+alter table 
+  public.global_inventory
+add foreign key (potion_id) references potions(id);

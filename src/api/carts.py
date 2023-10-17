@@ -15,6 +15,7 @@ class NewCart(BaseModel):
 
 @router.post("/")
 def create_cart(new_cart: NewCart):
+    # Works
     with db.engine.begin() as connection:
         sql_query = f"""
         INSERT INTO carts (customer)
@@ -28,16 +29,19 @@ def create_cart(new_cart: NewCart):
 
 @router.get("/{cart_id}")
 def get_cart(cart_id: int):
+    # Doesn't work
     with db.engine.begin() as connection:
         sql_query = f"""
-        SELECT * FROM carts
-        WHERE id = {cart_id}
+        SELECT carts.id, carts.customer, cart_items.item_sku, cart_items.quantity
+        FROM carts
+        LEFT JOIN cart_items ON carts.id = cart_items.cart_id
+        WHERE carts.id = {cart_id}
         """
         result = connection.execute(sqlalchemy.text(sql_query))
-        cart = result.first()
+        cart = result.fetchall()
 
-    if cart is None:
-        raise HTTPException(status_code=404, detail="Cart not found")
+        if not cart:
+            raise HTTPException(status_code=404, detail="Cart not found")
 
     return cart
 
