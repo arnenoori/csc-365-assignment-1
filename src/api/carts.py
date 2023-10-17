@@ -83,35 +83,49 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     with db.engine.begin() as connection:
-        # Fetch all items in the cart
-        sql_query = f"""
+        # Get the items in the cart
+        sql_query = """
         SELECT item_sku, quantity
         FROM cart_items
-        WHERE cart_id = {cart_id}
+        WHERE cart_id = :cart_id
         """
-        result = connection.execute(sqlalchemy.text(sql_query))
+        result = connection.execute(sqlalchemy.text(sql_query), {"cart_id": cart_id})
         cart_items = result.fetchall()
 
-        # For each item in the cart, decrease the inventory
-        for item in cart_items:
-            sql_query = f"""
-            UPDATE global_inventory
-            SET num_red_ml = num_red_ml - (SELECT quantity * ml_per_barrel FROM catalog WHERE sku = '{item.item_sku}')
-            WHERE id = 1
+        total_gold_paid = 0
+        total_potions_bought = 0
+
+        for item_sku, quantity in cart_items:
+            # Get price from catalog, add to total gold paid
+            sql_query = """
+            SELECT price
+            FROM catalog
+            WHERE sku = :item_sku
             """
-            connection.execute(sqlalchemy.text(sql_query))
+            result = connection.execute(sqlalchemy.text(sql_query), {"item_sku": item_sku})
+            total_gold_paid += result.first().price * quantity
+            total_potions_bought += quantity
 
-        # Calculate the total price
-        sql_query = f"""
-        SELECT SUM(quantity * price) as total
-        FROM cart_items
-        JOIN catalog ON cart_items.item_sku = catalog.sku
-        WHERE cart_id = {cart_id}
+            # Decrease quantity in catalog table
+            sql_query = """
+            UPDATE catalog
+            SET quantity = quantity - :quantity
+            WHERE sku = :item_sku
+            """
+            connection.execute(sqlalchemy.text(sql_query), {"quantity": quantity, "item_sku": item_sku})
+
+            # Remove items from cart_items
+            sql_query = """
+            DELETE FROM cart_items
+            WHERE cart_id = :cart_id AND item_sku = :item_sku
+            """
+            connection.execute(sqlalchemy.text(sql_query), {"cart_id": cart_id, "item_sku": item_sku})
+
+        # Update gold in global_inventory
+        sql_query = """
+        UPDATE global_inventory
+        SET gold = gold + :total_gold_paid
         """
-        result = connection.execute(sqlalchemy.text(sql_query))
-        total = result.first()[0]
+        connection.execute(sqlalchemy.text(sql_query), {"total_gold_paid": total_gold_paid})
 
-        if total > cart_checkout.payment:
-            raise HTTPException(status_code=400, detail="Insufficient payment")
-
-    return {"total_potions_bought": total, "total_gold_paid": cart_checkout.payment}
+    return {"total_potions_bought": total_potions_bought, "total_gold_paid": total_gold_paid}
