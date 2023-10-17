@@ -70,15 +70,16 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         blue_ml += buy_potion([0, 0, 1, 0], 500 - blue_ml)
 
     # Update the global_inventory table
-    sql_query = f"""
-    UPDATE global_inventory
-    SET gold = {gold},
-        num_red_ml = {red_ml},
-        num_green_ml = {green_ml},
-        num_blue_ml = {blue_ml},
-        num_dark_ml = {dark_ml}
-    """
-    connection.execute(sqlalchemy.text(sql_query))
+    with db.engine.begin() as connection:
+        sql_query = f"""
+        UPDATE global_inventory
+        SET gold = {gold},
+            num_red_ml = {red_ml},
+            num_green_ml = {green_ml},
+            num_blue_ml = {blue_ml},
+            num_dark_ml = {dark_ml}
+        """
+        connection.execute(sqlalchemy.text(sql_query))
 
     return {"gold": gold, "red_ml": red_ml, "green_ml": green_ml, "blue_ml": blue_ml, "dark_ml": dark_ml}
 '''
