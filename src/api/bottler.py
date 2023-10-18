@@ -130,7 +130,7 @@ def get_bottle_plan():
         for item in catalog:
             sku, name, quantity, price, red_ml, green_ml, blue_ml, dark_ml = item
 
-            if (red_ml > 0 and inventory_red_ml >= red_ml) and (green_ml > 0 and inventory_green_ml >= green_ml) and (blue_ml > 0 and inventory_blue_ml >= blue_ml) and (dark_ml > 0 and inventory_dark_ml >= dark_ml):
+            if (red_ml > 0 and inventory_red_ml >= red_ml) or (green_ml > 0 and inventory_green_ml >= green_ml) or (blue_ml > 0 and inventory_blue_ml >= blue_ml) or (dark_ml > 0 and inventory_dark_ml >= dark_ml):
                 print(f"Creating potion: {name}, SKU: {sku}")
                 bottle_plan.append({"potion_type": [red_ml, green_ml, blue_ml, dark_ml], "quantity": 1})
 
