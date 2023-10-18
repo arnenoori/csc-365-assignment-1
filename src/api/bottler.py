@@ -98,8 +98,6 @@ def get_bottle_plan():
     """
     Go from barrel to bottle. Gets called 4 times a day
     """
-    # Each bottle has a quantity of what proportion of red, blue, and green potion to add.
-    # Expressed in integers from 1 to 100 that must sum up to 100.
     bottle_plan = []
     with db.engine.begin() as connection:
         # Query global_inventory
@@ -118,34 +116,47 @@ def get_bottle_plan():
     with db.engine.begin() as connection:
         sql_query = """SELECT sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"""
         catalog = connection.execute(sqlalchemy.text(sql_query)).fetchall()
+
+    # Sort the catalog by the quantity, prioritizing potions with lesser quantity in stock.
     catalog = sorted(catalog, key=lambda x: x.quantity)
 
-    # if all potions already in stock
+    # if all potions are already in stock
     if all(item.quantity != 0 for item in catalog):
         print("All potions are in stock.")
         return []
 
-    while len(bottle_plan) < 10:  # Limit the bottle_plan to max 10 bottles
-        updated = False  # Flag to check if any potion was created in this iteration
+    # Try to create potions until we reach the plan limit or no more potions can be created.
+    while len(bottle_plan) < 10:
+        created_potion = False  # This flag checks if we've created a potion in this iteration.
+
         for item in catalog:
             sku, name, quantity, price, red_ml, green_ml, blue_ml, dark_ml = item
 
-            if (red_ml > 0 and inventory_red_ml >= red_ml) or (green_ml > 0 and inventory_green_ml >= green_ml) or (blue_ml > 0 and inventory_blue_ml >= blue_ml) or (dark_ml > 0 and inventory_dark_ml >= dark_ml):
-                print(f"Creating potion: {name}, SKU: {sku}")
-                bottle_plan.append({"potion_type": [red_ml, green_ml, blue_ml, dark_ml], "quantity": 1})
+            # Check if we have enough materials in inventory to create this potion.
+            if (red_ml == 0 or inventory_red_ml >= red_ml) and \
+               (green_ml == 0 or inventory_green_ml >= green_ml) and \
+               (blue_ml == 0 or inventory_blue_ml >= blue_ml) and \
+               (dark_ml == 0 or inventory_dark_ml >= dark_ml):
 
+                print(f"Creating potion: {name}, SKU: {sku}")
+
+                # Add the potion to the plan and update the inventory.
+                bottle_plan.append({"potion_type": [red_ml, green_ml, blue_ml, dark_ml], "quantity": 1})
                 inventory_red_ml -= red_ml
                 inventory_green_ml -= green_ml
                 inventory_blue_ml -= blue_ml
                 inventory_dark_ml -= dark_ml
 
-                updated = True
-                break  # Break after one potion is created to re-evaluate the next potion with the updated inventory
+                created_potion = True
 
-        if not updated or len(bottle_plan) == 10:  # If no potion was created or bottle_plan is full, break the loop
+                # If we created a potion, let's move to the next iteration to check other potions or inventory constraints.
+                break  
+
+        # If we didn't create any potion during this full pass on the catalog, or if the bottle plan is full, we exit the loop.
+        if not created_potion or len(bottle_plan) == 10:
             break
 
-    # Update global_inventory after all the potions have been created
+    # Update global_inventory after all potions have been planned.
     with db.engine.begin() as connection:
         sql_query = """UPDATE global_inventory SET num_red_ml = :red_ml, num_green_ml = :green_ml, num_blue_ml = :blue_ml, num_dark_ml = :dark_ml"""
         connection.execute(sqlalchemy.text(sql_query), {"red_ml": inventory_red_ml, "green_ml": inventory_green_ml, "blue_ml": inventory_blue_ml, "dark_ml": inventory_dark_ml})
