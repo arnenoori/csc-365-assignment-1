@@ -98,8 +98,7 @@ def get_bottle_plan():
     """
     Go from barrel to bottle. Gets called 4 times a day
     """
-    # Each bottle has a quantity of what proportion of red, blue, and
-    # green potion to add.
+    # Each bottle has a quantity of what proportion of red, blue, and green potion to add.
     # Expressed in integers from 1 to 100 that must sum up to 100.
     bottle_plan = []
     with db.engine.begin() as connection:
@@ -126,12 +125,12 @@ def get_bottle_plan():
         print("All potions are in stock.")
         return []
 
-    while len(bottle_plan) < 6:  # Limit the bottle_plan to max 6 items
+    while len(bottle_plan) < 10:  # Limit the bottle_plan to max 10 bottles
         updated = False  # Flag to check if any potion was created in this iteration
         for item in catalog:
             sku, name, quantity, price, red_ml, green_ml, blue_ml, dark_ml = item
 
-            if (inventory_red_ml >= red_ml) and (inventory_green_ml >= green_ml) and (inventory_blue_ml >= blue_ml) and (inventory_dark_ml >= dark_ml):
+            if (red_ml > 0 and inventory_red_ml >= red_ml) and (green_ml > 0 and inventory_green_ml >= green_ml) and (blue_ml > 0 and inventory_blue_ml >= blue_ml) and (dark_ml > 0 and inventory_dark_ml >= dark_ml):
                 print(f"Creating potion: {name}, SKU: {sku}")
                 bottle_plan.append({"potion_type": [red_ml, green_ml, blue_ml, dark_ml], "quantity": 1})
 
@@ -143,7 +142,7 @@ def get_bottle_plan():
                 updated = True
                 break  # Break after one potion is created to re-evaluate the next potion with the updated inventory
 
-        if not updated or len(bottle_plan) == 6:  # If no potion was created or bottle_plan is full, break the loop
+        if not updated or len(bottle_plan) == 10:  # If no potion was created or bottle_plan is full, break the loop
             break
 
     # Update global_inventory after all the potions have been created
