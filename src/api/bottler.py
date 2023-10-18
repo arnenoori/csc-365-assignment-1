@@ -100,8 +100,8 @@ def get_bottle_plan():
 
     with db.engine.begin() as connection:
         # Query global_inventory
-        sql_query = "SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"
-        result = connection.execute(sql_query)
+        sql_query = """SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
+        result = connection.execute(text(sql_query))
         global_inventory = result.first()
 
         if global_inventory is None:
@@ -112,8 +112,8 @@ def get_bottle_plan():
         print(f"Inventory: red_ml: {inventory_red_ml}, green_ml: {inventory_green_ml}, blue_ml: {inventory_blue_ml}, dark_ml: {inventory_dark_ml}")
 
         # Query catalog for potion recipes
-        sql_query = "SELECT sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"
-        catalog = connection.execute(sql_query).fetchall()
+        sql_query = """SELECT sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"""
+        catalog = connection.execute(text(sql_query)).fetchall()
 
     for potion in catalog:
         sku, name, quantity, price, required_red, required_green, required_blue, required_dark = potion
@@ -140,13 +140,13 @@ def get_bottle_plan():
 
             # Update the catalog with the new potion quantity
             with db.engine.begin() as connection:
-                sql_query = "UPDATE catalog SET quantity = quantity + 1 WHERE sku = :sku"
-                connection.execute(sql_query, {"sku": sku})
+                sql_query = """UPDATE catalog SET quantity = quantity + 1 WHERE sku = :sku"""
+                connection.execute(text(sql_query), {"sku": sku})
 
     # Update the global inventory after all potions are created
     with db.engine.begin() as connection:
-        sql_query = "UPDATE global_inventory SET num_red_ml = :red_ml, num_green_ml = :green_ml, num_blue_ml = :blue_ml, num_dark_ml = :dark_ml"
-        connection.execute(sql_query, {"red_ml": inventory_red_ml, "green_ml": inventory_green_ml, "blue_ml": inventory_blue_ml, "dark_ml": inventory_dark_ml})
+        sql_query = """UPDATE global_inventory SET num_red_ml = :red_ml, num_green_ml = :green_ml, num_blue_ml = :blue_ml, num_dark_ml = :dark_ml"""
+        connection.execute(text(sql_query), {"red_ml": inventory_red_ml, "green_ml": inventory_green_ml, "blue_ml": inventory_blue_ml, "dark_ml": inventory_dark_ml})
 
     print("Final bottle plan:", bottle_plan)
 
