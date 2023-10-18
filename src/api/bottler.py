@@ -95,14 +95,12 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
 
 @router.post("/plan")
 def get_bottle_plan():
-    """
-    Go from barrel to bottle. Gets called 4 times a day
-    """
     bottle_plan = []
+
     with db.engine.begin() as connection:
         # Query global_inventory
-        sql_query = """SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
-        result = connection.execute(sqlalchemy.text(sql_query))
+        sql_query = "SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"
+        result = connection.execute(sql_query)
         global_inventory = result.first()
 
         if global_inventory is None:
@@ -112,66 +110,42 @@ def get_bottle_plan():
         inventory_red_ml, inventory_green_ml, inventory_blue_ml, inventory_dark_ml = global_inventory
         print(f"Inventory: red_ml: {inventory_red_ml}, green_ml: {inventory_green_ml}, blue_ml: {inventory_blue_ml}, dark_ml: {inventory_dark_ml}")
 
-        # Query catalog
-        sql_query = """SELECT sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"""
-        catalog = connection.execute(sqlalchemy.text(sql_query)).fetchall()
+        # Query catalog for potion recipes
+        sql_query = "SELECT sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"
+        catalog = connection.execute(sql_query).fetchall()
 
-    # If all potions already in stock
-    if all(item.quantity != 0 for item in catalog):
-        print("All potions are in stock.")
-        return []
+    for potion in catalog:
+        sku, name, quantity, price, required_red, required_green, required_blue, required_dark = potion
 
-    while len(bottle_plan) < 10:  # Limit the bottle_plan to max 10 bottles
-        updated = False  # Flag to check if any potion was created in this iteration
+        # Check if we have enough ingredients to make this potion
+        can_create = (
+            (required_red == 0 or inventory_red_ml >= required_red) and 
+            (required_green == 0 or inventory_green_ml >= required_green) and 
+            (required_blue == 0 or inventory_blue_ml >= required_blue) and 
+            (required_dark == 0 or inventory_dark_ml >= required_dark)
+        )
 
-        for item in catalog:
-            sku, name, quantity, price, red_ml, green_ml, blue_ml, dark_ml = item
+        if can_create:
+            print(f"Creating potion: {name}, SKU: {sku}")
 
-            if (red_ml == 0 or inventory_red_ml >= red_ml) and (green_ml == 0 or inventory_green_ml >= green_ml) and (blue_ml == 0 or inventory_blue_ml >= blue_ml) and (dark_ml == 0 or inventory_dark_ml >= dark_ml):
-                potion_composition = [red_ml, green_ml, blue_ml, dark_ml]
+            # Add to the bottle plan
+            bottle_plan.append({"potion_type": [required_red, required_green, required_blue, required_dark], "quantity": 1})
 
-                with db.engine.begin() as connection:
-                    # Check if this potion exists in the catalog with the same composition
-                    sql_query = f"""
-                        SELECT sku FROM catalog 
-                        WHERE num_red_ml = :red_ml AND num_green_ml = :green_ml AND 
-                              num_blue_ml = :blue_ml AND num_dark_ml = :dark_ml
-                    """
-                    result = connection.execute(sqlalchemy.text(sql_query), {"red_ml": red_ml, "green_ml": green_ml, "blue_ml": blue_ml, "dark_ml": dark_ml})
-                    existing_potion = result.first()
+            # Update the inventory
+            inventory_red_ml -= required_red
+            inventory_green_ml -= required_green
+            inventory_blue_ml -= required_blue
+            inventory_dark_ml -= required_dark
 
-                    if existing_potion:
-                        # If the potion exists, increment the quantity
-                        existing_sku = existing_potion[0]
-                        update_query = """UPDATE catalog SET quantity = quantity + 1 WHERE sku = :sku"""
-                        connection.execute(sqlalchemy.text(update_query), {"sku": existing_sku})
-                    else:
-                        # If the potion doesn't exist, create a new entry in the catalog with a new SKU
-                        new_sku = "new_unique_sku_value"  # Generate a unique SKU for the new potion
-                        insert_query = """
-                            INSERT INTO catalog (sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml) 
-                            VALUES (:sku, :name, :quantity, :price, :red_ml, :green_ml, :blue_ml, :dark_ml)
-                        """
-                        connection.execute(sqlalchemy.text(insert_query), {"sku": new_sku, "name": name, "quantity": 1, "price": price, "red_ml": red_ml, "green_ml": green_ml, "blue_ml": blue_ml, "dark_ml": dark_ml})
-                        sku = new_sku
+            # Update the catalog with the new potion quantity
+            with db.engine.begin() as connection:
+                sql_query = "UPDATE catalog SET quantity = quantity + 1 WHERE sku = :sku"
+                connection.execute(sql_query, {"sku": sku})
 
-                bottle_plan.append({"sku": sku, "potion_type": potion_composition, "quantity": 1})
-
-                inventory_red_ml -= red_ml
-                inventory_green_ml -= green_ml
-                inventory_blue_ml -= blue_ml
-                inventory_dark_ml -= dark_ml
-
-                updated = True
-                break  # Break after one potion is created to re-evaluate the next potion with the updated inventory
-
-        if not updated or len(bottle_plan) == 10:  # If no potion was created or bottle_plan is full, break the loop
-            break
-
-    # Update global_inventory after all the potions have been created
+    # Update the global inventory after all potions are created
     with db.engine.begin() as connection:
-        sql_query = """UPDATE global_inventory SET num_red_ml = :red_ml, num_green_ml = :green_ml, num_blue_ml = :blue_ml, num_dark_ml = :dark_ml"""
-        connection.execute(sqlalchemy.text(sql_query), {"red_ml": inventory_red_ml, "green_ml": inventory_green_ml, "blue_ml": inventory_blue_ml, "dark_ml": inventory_dark_ml})
+        sql_query = "UPDATE global_inventory SET num_red_ml = :red_ml, num_green_ml = :green_ml, num_blue_ml = :blue_ml, num_dark_ml = :dark_ml"
+        connection.execute(sql_query, {"red_ml": inventory_red_ml, "green_ml": inventory_green_ml, "blue_ml": inventory_blue_ml, "dark_ml": inventory_dark_ml})
 
     print("Final bottle plan:", bottle_plan)
 
