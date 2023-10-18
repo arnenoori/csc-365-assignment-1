@@ -96,6 +96,8 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
 
 @router.post("/plan")
 def get_bottle_plan():
+    MAX_SAME_POTION = 10  # The maximum number of the same potions to create at once
+    RESOURCE_THRESHOLD = 2000  # The threshold above which we create up to 10 potions, so we keep 1000 ml for mixed potions
     bottle_plan = []
 
     with db.engine.begin() as connection:
@@ -118,30 +120,38 @@ def get_bottle_plan():
     for potion in catalog:
         sku, name, quantity, price, required_red, required_green, required_blue, required_dark = potion
 
-        # Check if we have enough ingredients to make this potion
-        can_create = (
-            (required_red == 0 or inventory_red_ml >= required_red) and 
-            (required_green == 0 or inventory_green_ml >= required_green) and 
-            (required_blue == 0 or inventory_blue_ml >= required_blue) and 
-            (required_dark == 0 or inventory_dark_ml >= required_dark)
+        # Determine the maximum number of potions we can create with the current inventory
+        max_potions = min(
+            (inventory_red_ml // required_red if required_red > 0 else MAX_SAME_POTION),
+            (inventory_green_ml // required_green if required_green > 0 else MAX_SAME_POTION),
+            (inventory_blue_ml // required_blue if required_blue > 0 else MAX_SAME_POTION),
+            (inventory_dark_ml // required_dark if required_dark > 0 else MAX_SAME_POTION),
+            MAX_SAME_POTION  # Ensure we don't create more than the maximum allowed number of the same potion
         )
+        print(f"Maximum of {max_potions} '{name}' potions can be created based on current inventory.")
 
-        if can_create:
-            print(f"Creating potion: {name}, SKU: {sku}")
+        # If we have abundant resources (e.g., more than 2000 ml), create more potions (up to 10)
+        if max_potions > 0 and any(inventory > RESOURCE_THRESHOLD for inventory in [inventory_red_ml, inventory_green_ml, inventory_blue_ml, inventory_dark_ml]):
+            potion_count = max_potions
+        else:
+            potion_count = 1  # default to creating one potion if resources are not abundant
+
+        if potion_count > 0:
+            print(f"Creating {potion_count} of potion: {name}, SKU: {sku}")
 
             # Add to the bottle plan
-            bottle_plan.append({"potion_type": [required_red, required_green, required_blue, required_dark], "quantity": 1})
+            bottle_plan.append({"potion_type": [required_red, required_green, required_blue, required_dark], "quantity": potion_count})
 
             # Update the inventory
-            inventory_red_ml -= required_red
-            inventory_green_ml -= required_green
-            inventory_blue_ml -= required_blue
-            inventory_dark_ml -= required_dark
+            inventory_red_ml -= required_red * potion_count
+            inventory_green_ml -= required_green * potion_count
+            inventory_blue_ml -= required_blue * potion_count
+            inventory_dark_ml -= required_dark * potion_count
 
             # Update the catalog with the new potion quantity
             with db.engine.begin() as connection:
-                sql_query = """UPDATE catalog SET quantity = quantity + 1 WHERE sku = :sku"""
-                connection.execute(text(sql_query), {"sku": sku})
+                sql_query = """UPDATE catalog SET quantity = quantity + :new_quantity WHERE sku = :sku"""
+                connection.execute(text(sql_query), {"sku": sku, "new_quantity": potion_count})
 
     # Update the global inventory after all potions are created
     with db.engine.begin() as connection:
