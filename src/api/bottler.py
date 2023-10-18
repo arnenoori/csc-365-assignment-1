@@ -4,6 +4,7 @@ from typing import List
 from pydantic import BaseModel
 from src.api import auth
 from src import database as db
+from sqlalchemy import text
 import sqlalchemy
 
 router = APIRouter(

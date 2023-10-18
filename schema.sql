@@ -30,20 +30,32 @@ create table
   );
 
 -- catalog table
-create table 
-  public.catalog (
-    id bigint generated always as identity primary key,
-    created_at timestamp with time zone not null default now(),
-    sku text not null,
-    name text not null,
-    price bigint null,
-    ml_per_barrel bigint null,
-    num_red_ml bigint null,
-    num_green_ml bigint null,
-    num_blue_ml bigint null,
-    num_dark_ml bigint null,
-    quantity bigint null
-  );
+create table public.catalog (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    sku TEXT NOT NULL,
+    name TEXT NOT NULL,
+    price BIGINT NOT NULL CHECK (price BETWEEN 1 AND 500),
+    ml_per_barrel BIGINT NOT NULL,
+    num_red_ml BIGINT NOT NULL,
+    num_green_ml BIGINT NOT NULL,
+    num_blue_ml BIGINT NOT NULL,
+    num_dark_ml BIGINT NOT NULL,
+    quantity BIGINT NOT NULL CHECK (quantity BETWEEN 0 AND 10000),
+    CHECK ((num_red_ml + num_green_ml + num_blue_ml + num_dark_ml) = 100)
+);
+
+INSERT INTO public.catalog (sku, name, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_per_barrel, quantity)
+VALUES 
+  ('SKU1', 'Pure Red Potion', 100, 100, 0, 0, 0, 100, 0),
+  ('SKU2', 'Pure Green Potion', 100, 0, 100, 0, 0, 100, 0),
+  ('SKU3', 'Pure Blue Potion', 100, 0, 0, 100, 0, 100, 0),
+  ('SKU4', 'Pure Dark Potion', 25, 0, 0, 0, 100, 100, 0),
+  ('SKU5', 'Purple Potion', 25, 50, 0, 50, 0, 100, 0),
+  ('SKU6', 'Cyan Potion', 25, 0, 50, 50, 0, 100, 0),
+  ('SKU7', 'Magenta Potion', 25, 50, 50, 0, 0, 100, 0),
+  ('SKU8', 'Yellow Potion', 25, 50, 50, 0, 0, 100, 0),
+  ('SKU9', 'White Potion', 20, 34, 33, 33, 0, 100, 0);
 
 -- deliveries table
 create table 
