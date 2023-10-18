@@ -18,15 +18,28 @@ class PotionInventory(BaseModel):
 
 @router.post("/deliver")
 def post_deliver_bottles(potions_delivered: List[PotionInventory]):
+    print("Starting delivery of potions...")
     with db.engine.begin() as connection:
+        # Query global_inventory
+        sql_query = """SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
+        result = connection.execute(sqlalchemy.text(sql_query))
+        global_inventory = result.first()
+
+        if global_inventory is None:
+            print("No inventory found.")
+            return "No inventory found."
+
+        num_red_ml, num_green_ml, num_blue_ml, num_dark_ml = global_inventory
+
         # Query catalog
-        sql_query = """SELECT id, sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"""
+        sql_query = """SELECT id, sku, name, price, quantity, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"""
         catalog = connection.execute(sqlalchemy.text(sql_query)).fetchall()
 
         for potion in potions_delivered:
-
+            print(f"Processing potion: {potion}")
             if len(potion.potion_type) != 4:
-                return f"Error: potion.potion_type must contain exactly four elements, but got {len(potion.potion_type)}"
+                print(f"Error: potion.potion_type must contain exactly four elements, but got {len(potion.potion_type)}.")
+                continue
 
             red_ml, green_ml, blue_ml, dark_ml = potion.potion_type
             sku = name = f"{red_ml}_{green_ml}_{blue_ml}_{dark_ml}"
@@ -58,6 +71,8 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
                 "dark_ml": dark_ml
             })
 
+            print(f"Updated catalog with potion: {potion}")
+
             # Update global_inventory
             sql_query = """
             UPDATE global_inventory SET 
@@ -73,6 +88,9 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
                 "dark_ml": dark_ml * quantity
             })
 
+            print(f"Updated global_inventory with potion: {potion}")
+
+    print("Finished delivery of potions.")
     return "OK"
 
 @router.post("/plan")

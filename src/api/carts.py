@@ -15,7 +15,7 @@ class NewCart(BaseModel):
 
 @router.post("/")
 def create_cart(new_cart: NewCart):
-    # Works
+    print("Creating a new cart...")
     with db.engine.begin() as connection:
         sql_query = f"""
         INSERT INTO carts (customer)
@@ -25,10 +25,12 @@ def create_cart(new_cart: NewCart):
         result = connection.execute(sqlalchemy.text(sql_query))
         cart_id = result.first()[0]
 
+    print(f"Created a new cart with id: {cart_id}")
     return {"cart_id": cart_id}
 
 @router.get("/{cart_id}")
 def get_cart(cart_id: int):
+    print(f"Getting cart with id: {cart_id}")
     with db.engine.begin() as connection:
         sql_query = f"""
         SELECT carts.id, carts.customer, cart_items.item_sku, cart_items.quantity
@@ -40,8 +42,10 @@ def get_cart(cart_id: int):
         cart = [row._asdict() for row in result]
 
         if not cart:
+            print(f"Cart with id: {cart_id} not found")
             raise HTTPException(status_code=404, detail="Cart not found")
-
+        
+    print(f"Returning cart: {cart}")
     return cart
 
 class CartItem(BaseModel):
@@ -50,6 +54,7 @@ class CartItem(BaseModel):
 
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
+    print(f"Setting item quantity for cart_id: {cart_id}, item_sku: {item_sku}")
     with db.engine.begin() as connection:
         # Check if the item already exists in the cart
         sql_query = f"""
@@ -61,6 +66,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
 
         if item_exists:
             # If the item exists, update the quantity
+            print(f"Item exists in the cart, updating quantity to: {cart_item.quantity}")
             sql_query = f"""
             UPDATE cart_items
             SET quantity = {cart_item.quantity}
@@ -68,6 +74,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
             """
         else:
             # If the item doesn't exist, insert a new record
+            print(f"Item does not exist in the cart, inserting new record with quantity: {cart_item.quantity}")
             sql_query = f"""
             INSERT INTO cart_items (cart_id, item_sku, quantity)
             VALUES ({cart_id}, '{item_sku}', {cart_item.quantity})
@@ -75,6 +82,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
 
         connection.execute(sqlalchemy.text(sql_query))
 
+    print("Item quantity set successfully")
     return "OK"
 
 class CartCheckout(BaseModel):
@@ -82,6 +90,7 @@ class CartCheckout(BaseModel):
 
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
+    print(f"Checking out cart with id: {cart_id}")
     with db.engine.begin() as connection:
         # Get the items in the cart
         sql_query = """
@@ -105,6 +114,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             result = connection.execute(sqlalchemy.text(sql_query), {"item_sku": item_sku})
             item = result.first()
             if item is None:
+                print(f"Item with SKU {item_sku} not found in catalog")
                 raise HTTPException(status_code=404, detail=f"Item with SKU {item_sku} not found in catalog")
             total_gold_paid += item.price * quantity
             total_potions_bought += quantity
@@ -131,4 +141,5 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         """
         connection.execute(sqlalchemy.text(sql_query), {"total_gold_paid": total_gold_paid})
 
+    print(f"Checkout successful. Total potions bought: {total_potions_bought}, Total gold paid: {total_gold_paid}")
     return {"total_potions_bought": total_potions_bought, "total_gold_paid": total_gold_paid}

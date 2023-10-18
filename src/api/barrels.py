@@ -18,8 +18,8 @@ class Barrel(BaseModel):
     quantity: int
 
 @router.post("/deliver")
-# Works
 def post_deliver_barrels(barrels_delivered: list[Barrel]):
+    print("Starting delivery of barrels...")
     for barrel in barrels_delivered:
         # Ensure potion_type has 4 elements
         while len(barrel.potion_type) < 4:
@@ -34,13 +34,16 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
                 num_dark_ml = num_dark_ml + {barrel.potion_type[3] * barrel.ml_per_barrel * barrel.quantity}
             """
             connection.execute(sqlalchemy.text(sql_query))
+        print(f"Delivered barrel: {barrel.sku}")
 
+    print("Finished delivery of barrels.")
     return "OK"
 
 
 # Gets called once a day
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
+    print("Starting wholesale purchase plan...")
     with db.engine.begin() as connection:
         sql_query = """SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
         inventory = connection.execute(sqlalchemy.text(sql_query)).first()
@@ -58,6 +61,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             if barrel.potion_type == potion_type and barrel.price <= gold:
                 gold -= barrel.price  # buying only one barrel for now
                 purchase_plan.append({"sku": barrel.sku, "quantity": 1})  # quantity is set to 1
+                print(f"Bought barrel: {barrel.sku}")
                 return barrel.ml_per_barrel  # assuming one barrel is bought, so not multiplying by quantity
         return 0
 
@@ -79,6 +83,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 if barrel.potion_type == potion and gold >= barrel.price:
                     purchase_plan.append({"sku": barrel.sku, "quantity": 1})
                     gold -= barrel.price
+                    print(f"Bought barrel: {barrel.sku}")
                     break  # break after buying one barrel
 
     # Update the inventory after all purchases
@@ -93,6 +98,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         """
         connection.execute(sqlalchemy.text(sql_query))
 
+    print("Finished wholesale purchase plan.")
     return purchase_plan  # returning the purchase plan instead of the inventory statuses
 
 '''
