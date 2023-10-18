@@ -120,6 +120,14 @@ def get_bottle_plan():
     for potion in catalog:
         sku, name, quantity, price, required_red, required_green, required_blue, required_dark = potion
 
+        # Check if we have enough ingredients for at least one potion
+        if (required_red > inventory_red_ml or 
+            required_green > inventory_green_ml or 
+            required_blue > inventory_blue_ml or 
+            required_dark > inventory_dark_ml):
+            print(f"Not enough inventory to create even one '{name}'. Skipping...")
+            continue  # Skip this potion if there's not enough inventory for any type to make sure I can't get negative ML
+
         # Determine the maximum number of potions we can create with the current inventory
         max_potions = min(
             (inventory_red_ml // required_red if required_red > 0 else MAX_SAME_POTION),
