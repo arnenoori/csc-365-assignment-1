@@ -36,6 +36,8 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
         sql_query = """SELECT id, sku, name, price, quantity, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"""
         catalog = connection.execute(sqlalchemy.text(sql_query)).fetchall()
 
+        MAX_QUANTITY = 10000
+
         for potion in potions_delivered:
             print(f"Processing potion: {potion}")
             if len(potion.potion_type) != 4:
@@ -46,16 +48,27 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
             sku = name = f"{red_ml}_{green_ml}_{blue_ml}_{dark_ml}"
             quantity = potion.quantity
 
+            if quantity < 0:
+                print(f"Error: Negative quantity ({quantity}) specified for potion: {potion}")
+                continue
+
+            updated_quantity = quantity
+
+            if updated_quantity > MAX_QUANTITY:
+                print(f"Error: Quantity ({updated_quantity}) exceeds the maximum limit for potion: {potion}")
+                continue
+
             # Update catalog
             sql_query = """
-            INSERT INTO catalog (sku, name, price, quantity, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml)
-            VALUES (:sku, :name, :price, :quantity, :red_ml, :green_ml, :blue_ml, :dark_ml) 
-            ON CONFLICT (sku) DO UPDATE SET quantity = catalog.quantity + :quantity
+            INSERT INTO catalog (sku, name, quantity, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml)
+            VALUES (:sku, :name, :quantity, :red_ml, :green_ml, :blue_ml, :dark_ml) 
+            ON CONFLICT (sku) DO UPDATE 
+            SET quantity = catalog.quantity + :quantity
+            WHERE catalog.quantity + :quantity <= 10000  -- This ensures the quantity does not exceed the maximum
             """
             connection.execute(sqlalchemy.text(sql_query), {
                 "sku": sku, 
                 "name": name, 
-                "price": 1, 
                 "quantity": quantity, 
                 "red_ml": red_ml, 
                 "green_ml": green_ml, 
@@ -68,10 +81,10 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
             # Update global_inventory
             sql_query = """
             UPDATE global_inventory SET 
-                num_red_ml = num_red_ml + :red_ml,
-                num_green_ml = num_green_ml + :green_ml,
-                num_blue_ml = num_blue_ml + :blue_ml,
-                num_dark_ml = num_dark_ml + :dark_ml
+                num_red_ml = num_red_ml - :red_ml,
+                num_green_ml = num_green_ml - :green_ml,
+                num_blue_ml = num_blue_ml - :blue_ml,
+                num_dark_ml = num_dark_ml - :dark_ml
             """
             connection.execute(sqlalchemy.text(sql_query), {
                 "red_ml": red_ml * quantity, 
