@@ -46,22 +46,13 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
             sku = name = f"{red_ml}_{green_ml}_{blue_ml}_{dark_ml}"
             quantity = potion.quantity
 
-            # Determine id from catalog based on sku
-            for item in catalog:
-                if item.sku == sku:
-                    id = item.id
-                    break
-            else:
-                id = None
-
             # Update catalog
             sql_query = """
-            INSERT INTO catalog (id, sku, name, price, quantity, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml)
-            VALUES (:id, :sku, :name, :price, :quantity, :red_ml, :green_ml, :blue_ml, :dark_ml) 
-            ON CONFLICT (id) DO UPDATE SET quantity = catalog.quantity + :quantity
+            INSERT INTO catalog (sku, name, price, quantity, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml)
+            VALUES (:sku, :name, :price, :quantity, :red_ml, :green_ml, :blue_ml, :dark_ml) 
+            ON CONFLICT (sku) DO UPDATE SET quantity = catalog.quantity + :quantity
             """
             connection.execute(sqlalchemy.text(sql_query), {
-                "id": id, 
                 "sku": sku, 
                 "name": name, 
                 "price": 1, 
