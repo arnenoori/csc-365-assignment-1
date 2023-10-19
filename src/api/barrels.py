@@ -25,6 +25,9 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
         while len(barrel.potion_type) < 4:
             barrel.potion_type.append(0)
 
+        # Log the barrel data
+        print(f"Barrel data: {barrel}")
+
         with db.engine.begin() as connection:
             sql_query = f"""
             UPDATE global_inventory
@@ -33,9 +36,12 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
                 num_blue_ml = num_blue_ml + {barrel.potion_type[2] * barrel.ml_per_barrel * barrel.quantity},
                 num_dark_ml = num_dark_ml + {barrel.potion_type[3] * barrel.ml_per_barrel * barrel.quantity}
             """
-            connection.execute(sqlalchemy.text(sql_query))
-        print(f"Delivered barrel: {barrel.sku}")
+            # Execute the SQL query and log the result
+            result = connection.execute(sqlalchemy.text(sql_query))
+            print(f"Inventory update result: {result}")
 
+        print(f"Delivered barrel: {barrel.sku}")
+        
     print("Finished delivery of barrels.")
     return "OK"
 
