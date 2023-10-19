@@ -122,10 +122,10 @@ def get_bottle_plan():
 
         # Check if we have enough ingredients for at least one potion
         can_create = all([
-            inventory_red_ml >= required_red,
-            inventory_green_ml >= required_green,
-            inventory_blue_ml >= required_blue,
-            inventory_dark_ml >= required_dark
+            inventory_red_ml >= required_red if required_red > 0 else True,
+            inventory_green_ml >= required_green if required_green > 0 else True,
+            inventory_blue_ml >= required_blue if required_blue > 0 else True,
+            inventory_dark_ml >= required_dark if required_dark > 0 else True
         ])
 
         if not can_create:
