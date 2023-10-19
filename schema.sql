@@ -50,12 +50,9 @@ VALUES
   ('SKU1', 'Pure Red Potion', 100, 100, 0, 0, 0, 100, 0),
   ('SKU2', 'Pure Green Potion', 100, 0, 100, 0, 0, 100, 0),
   ('SKU3', 'Pure Blue Potion', 100, 0, 0, 100, 0, 100, 0),
-  ('SKU4', 'Pure Dark Potion', 25, 0, 0, 0, 100, 100, 0),
   ('SKU5', 'Purple Potion', 25, 50, 0, 50, 0, 100, 0),
   ('SKU6', 'Cyan Potion', 25, 0, 50, 50, 0, 100, 0),
-  ('SKU7', 'Magenta Potion', 25, 50, 50, 0, 0, 100, 0),
   ('SKU8', 'Yellow Potion', 25, 50, 50, 0, 0, 100, 0),
-  ('SKU9', 'White Potion', 20, 34, 33, 33, 0, 100, 0);
 
 -- deliveries table
 create table 
