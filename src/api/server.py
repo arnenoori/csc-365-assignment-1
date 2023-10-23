@@ -1,11 +1,11 @@
 from fastapi import FastAPI, exceptions
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from . import bottler
-from src.api import audit, carts, catalog, barrels, admin
+from src.api import audit, carts, catalog, bottler, barrels, admin
 import json
 import logging
 import sys
+from starlette.middleware.cors import CORSMiddleware
 
 description = """
 Central Coast Cauldrons is the premier ecommerce site for all your alchemical desires.
@@ -20,6 +20,16 @@ app = FastAPI(
         "name": "Lucas Pierce",
         "email": "lupierce@calpoly.edu",
     },
+)
+
+origins = ["https://potion-exchange.vercel.app"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 app.include_router(audit.router)
