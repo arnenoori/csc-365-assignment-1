@@ -19,7 +19,14 @@ class Result(BaseModel):
 def get_inventory():
     """ """
     with db.engine.begin() as connection:
-        sql_query = """SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml from global_inventory"""
+        sql_query = """
+        SELECT 
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 1) AS gold,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 2) AS ml_in_red_barrels,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 3) AS ml_in_green_barrels,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 4) AS ml_in_blue_barrels,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 5) AS ml_in_dark_barrels
+        """
         result = connection.execute(sqlalchemy.text(sql_query))
         first_row = result.first()
 
@@ -34,14 +41,13 @@ def get_inventory():
 
     return {
         "gold": first_row.gold,
-        "ml_in_red_barrels": first_row.num_red_ml,
-        "ml_in_green_barrels": first_row.num_green_ml,
-        "ml_in_blue_barrels": first_row.num_blue_ml,
-        "ml_in_dark_barrels": first_row.num_dark_ml
+        "ml_in_red_barrels": first_row.ml_in_red_barrels,
+        "ml_in_green_barrels": first_row.ml_in_green_barrels,
+        "ml_in_blue_barrels": first_row.ml_in_blue_barrels,
+        "ml_in_dark_barrels": first_row.ml_in_dark_barrels
     }
-# Gets called once a day
+
 @router.post("/results")
-# Works
 def post_audit_results(audit_explanation: Result):
     """ """
     print(audit_explanation)

@@ -16,12 +16,35 @@ def reset():
     inventory, all barrels are removed from inventory, and all in-flight carts are deleted. 
     """
     with db.engine.begin() as connection:
-        # Reset global inventory
+        # Query global_inventory
+        sql_query = """SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, gold FROM global_inventory"""
+        result = connection.execute(sqlalchemy.text(sql_query))
+        global_inventory = result.first()
+
+        if global_inventory is None:
+            print("No inventory found.")
+            return "No inventory found."
+
+        num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, gold = global_inventory
+
+        # Create a new transaction
         sql_query = """
-        UPDATE global_inventory
-        SET num_red_ml = 0, num_green_ml = 0, num_blue_ml = 0, num_dark_ml = 0, gold = 100
+        INSERT INTO inventory_transactions (description)
+        VALUES (:description)
+        RETURNING id
         """
-        connection.execute(sqlalchemy.text(sql_query))
+        transaction_id = connection.execute(sqlalchemy.text(sql_query), {"description": "Reset game state"}).scalar()
+
+        # Create ledger entries for each change in inventory
+        sql_query = """
+        INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
+        VALUES (:inventory_id, :transaction_id, :change)
+        """
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 1, "transaction_id": transaction_id, "change": 100 - gold})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 2, "transaction_id": transaction_id, "change": -num_red_ml})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 3, "transaction_id": transaction_id, "change": -num_green_ml})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 4, "transaction_id": transaction_id, "change": -num_blue_ml})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 5, "transaction_id": transaction_id, "change": -num_dark_ml})
 
         # Reset catalog quantity
         sql_query = """

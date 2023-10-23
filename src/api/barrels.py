@@ -29,16 +29,21 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
         print(f"Barrel data: {barrel}")
 
         with db.engine.begin() as connection:
-            sql_query = f"""
-            UPDATE global_inventory
-            SET num_red_ml = num_red_ml + {barrel.potion_type[0] * barrel.ml_per_barrel * barrel.quantity},
-                num_green_ml = num_green_ml + {barrel.potion_type[1] * barrel.ml_per_barrel * barrel.quantity},
-                num_blue_ml = num_blue_ml + {barrel.potion_type[2] * barrel.ml_per_barrel * barrel.quantity},
-                num_dark_ml = num_dark_ml + {barrel.potion_type[3] * barrel.ml_per_barrel * barrel.quantity}
+            # Create a new transaction
+            sql_query = """
+            INSERT INTO inventory_transactions (description)
+            VALUES (:description)
+            RETURNING id
             """
-            # Execute the SQL query and log the result
-            result = connection.execute(sqlalchemy.text(sql_query))
-            print(f"Inventory update result: {result}")
+            transaction_id = connection.execute(sqlalchemy.text(sql_query), {"description": f"Delivered barrel: {barrel.sku}"}).scalar()
+
+            # Create ledger entries for each change in inventory
+            for i, change in enumerate(barrel.potion_type):
+                sql_query = """
+                INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
+                VALUES (:inventory_id, :transaction_id, :change)
+                """
+                connection.execute(sqlalchemy.text(sql_query), {"inventory_id": i+2, "transaction_id": transaction_id, "change": change * barrel.ml_per_barrel * barrel.quantity})
 
         print(f"Delivered barrel: {barrel.sku}")
         
@@ -51,7 +56,15 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print("Starting wholesale purchase plan...")
     with db.engine.begin() as connection:
-        sql_query = """SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
+        # Calculate the current inventory values
+        sql_query = """
+        SELECT 
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 1) AS gold,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 2) AS red_ml,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 3) AS green_ml,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 4) AS blue_ml,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 5) AS dark_ml
+        """
         inventory = connection.execute(sqlalchemy.text(sql_query)).first()
 
     if inventory is None:
@@ -94,73 +107,26 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     # Update the inventory after all purchases
     with db.engine.begin() as connection:
-        sql_query = f"""
-        UPDATE global_inventory
-        SET gold = {gold},
-            num_red_ml = {red_ml},
-            num_green_ml = {green_ml},
-            num_blue_ml = {blue_ml},
-            num_dark_ml = {dark_ml}
+        # Create a new transaction
+        sql_query = """
+        INSERT INTO inventory_transactions (description)
+        VALUES (:description)
+        RETURNING id
         """
-        connection.execute(sqlalchemy.text(sql_query))
+        transaction_id = connection.execute(sqlalchemy.text(sql_query), {"description": "Wholesale purchase plan"}).scalar()
+
+        # Create ledger entries for each change in inventory
+        sql_query = """
+        INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
+        VALUES (:inventory_id, :transaction_id, :change)
+        """
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 1, "transaction_id": transaction_id, "change": -gold})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 2, "transaction_id": transaction_id, "change": red_ml})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 3, "transaction_id": transaction_id, "change": green_ml})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 4, "transaction_id": transaction_id, "change": blue_ml})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 5, "transaction_id": transaction_id, "change": dark_ml})
 
     print("Finished wholesale purchase plan.")
     return purchase_plan  # returning the purchase plan instead of the inventory statuses
-
-'''
-Barrel(sku='SMALL_BLUE_BARREL', ml_per_barrel=500, potion_type=[0, 0, 1, 0], price=120, quantity=1)
-Barrel(sku='MINI_BLUE_BARREL', ml_per_barrel=200, potion_type=[0, 0, 1, 0], price=60, quantity=1)]
-
-Barrel(sku='SMALL_GREEN_BARREL', ml_per_barrel=500, potion_type=[0, 1, 0, 0], price=100, quantity=1) 
-Barrel(sku='MINI_GREEN_BARREL', ml_per_barrel=200, potion_type=[0, 1, 0, 0], price=60, quantity=1) 
-    
-'''
-
-'''
-OLD FUNCTION:
-
-@router.post("/plan")
-def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
-    # Gold value and potion quantities from global_inventory
-    with db.engine.begin() as connection:
-        sql_query = """SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
-        inventory = connection.execute(sqlalchemy.text(sql_query)).first()
-        gold, red_ml, green_ml, blue_ml, dark_ml = inventory
-
-    wholesale_catalog = sorted(wholesale_catalog, key=lambda x: x.ml_per_barrel)
-
-    res = {}
-    # always buy minis
-    def buy_potion(potion_type):
-        for barrel in wholesale_catalog:
-            if barrel.potion_type == potion_type and gold >= barrel.price:
-                if barrel.sku in res:
-                    res[barrel.sku]["quantity"] += 1
-                else:
-                    res[barrel.sku] = {"quantity": 1}
-                gold -= barrel.price
-                break
-
-    if red_ml < 100:
-        buy_potion([1, 0, 0, 0])
-    if green_ml < 100:
-        buy_potion([0, 1, 0, 0])
-    if blue_ml < 100:
-        buy_potion([0, 0, 1, 0])
-
-    # Iterate through rest of barrels and buy if possible
-    for barrel in wholesale_catalog:
-        if barrel.price <= gold:
-            if barrel.sku in res:
-                res[barrel.sku]["quantity"] += 1
-            else:
-                res[barrel.sku] = {"quantity": 1}
-            gold -= barrel.price
-
-    return res
-
-
-
-'''
 
 # barrel optimizer function

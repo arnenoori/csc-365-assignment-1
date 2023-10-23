@@ -58,45 +58,26 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
                 print(f"Error: Quantity ({updated_quantity}) exceeds the maximum limit for potion: {potion}")
                 continue
 
-            # Update catalog
+            # Create a new transaction
             sql_query = """
-            INSERT INTO catalog (sku, name, quantity, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml)
-            VALUES (:sku, :name, :quantity, :red_ml, :green_ml, :blue_ml, :dark_ml) 
-            ON CONFLICT (sku) DO UPDATE 
-            SET quantity = catalog.quantity + :quantity
-            WHERE catalog.quantity + :quantity <= 10000  -- This ensures the quantity does not exceed the maximum
+            INSERT INTO inventory_transactions (description)
+            VALUES (:description)
+            RETURNING id
             """
-            connection.execute(sqlalchemy.text(sql_query), {
-                "sku": sku, 
-                "name": name, 
-                "quantity": quantity, 
-                "red_ml": red_ml, 
-                "green_ml": green_ml, 
-                "blue_ml": blue_ml, 
-                "dark_ml": dark_ml
-            })
+            transaction_id = connection.execute(sqlalchemy.text(sql_query), {"description": f"Delivered potion: {potion}"}).scalar()
 
-            print(f"Updated catalog with potion: {potion}")
+            # Create ledger entries for each change in inventory
+            for i, change in enumerate(potion.potion_type):
+                sql_query = """
+                INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
+                VALUES (:inventory_id, :transaction_id, :change)
+                """
+                connection.execute(sqlalchemy.text(sql_query), {"inventory_id": i+2, "transaction_id": transaction_id, "change": -change * quantity})
 
-            # Update global_inventory
-            sql_query = """
-            UPDATE global_inventory SET 
-                num_red_ml = num_red_ml - :red_ml,
-                num_green_ml = num_green_ml - :green_ml,
-                num_blue_ml = num_blue_ml - :blue_ml,
-                num_dark_ml = num_dark_ml - :dark_ml
-            """
-            connection.execute(sqlalchemy.text(sql_query), {
-                "red_ml": red_ml * quantity, 
-                "green_ml": green_ml * quantity, 
-                "blue_ml": blue_ml * quantity, 
-                "dark_ml": dark_ml * quantity
-            })
+            print(f"Delivered potion: {potion}")
 
-            print(f"Updated global_inventory with potion: {potion}")
-
-    print("Finished delivery of potions.")
-    return "OK"
+        print("Finished delivery of potions.")
+        return "OK"
 
 @router.post("/plan")
 def get_bottle_plan():
@@ -105,31 +86,34 @@ def get_bottle_plan():
     bottle_plan = []
 
     with db.engine.begin() as connection:
-        # Query global_inventory
-        sql_query = """SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM global_inventory"""
-        result = connection.execute(text(sql_query))
-        global_inventory = result.first()
+        # Calculate the current inventory values
+        sql_query = """
+        SELECT 
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 2) AS red_ml,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 3) AS green_ml,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 4) AS blue_ml,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 5) AS dark_ml
+        """
+        inventory = connection.execute(sqlalchemy.text(sql_query)).first()
 
-        if global_inventory is None:
-            print("No inventory found.")
-            return bottle_plan
+    if inventory is None:
+        red_ml, green_ml, blue_ml, dark_ml = 0, 0, 0, 0
+    else:
+        red_ml, green_ml, blue_ml, dark_ml = inventory
 
-        inventory_red_ml, inventory_green_ml, inventory_blue_ml, inventory_dark_ml = global_inventory
-        print(f"Inventory: red_ml: {inventory_red_ml}, green_ml: {inventory_green_ml}, blue_ml: {inventory_blue_ml}, dark_ml: {inventory_dark_ml}")
-
-        # Query catalog for potion recipes
-        sql_query = """SELECT sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"""
-        catalog = connection.execute(text(sql_query)).fetchall()
+    # Query catalog for potion recipes
+    sql_query = """SELECT sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"""
+    catalog = connection.execute(sqlalchemy.text(sql_query)).fetchall()
 
     for potion in catalog:
         sku, name, quantity, price, required_red, required_green, required_blue, required_dark = potion
 
         # Check if we have enough ingredients for at least one potion
         can_create = all([
-            inventory_red_ml >= required_red if required_red > 0 else True,
-            inventory_green_ml >= required_green if required_green > 0 else True,
-            inventory_blue_ml >= required_blue if required_blue > 0 else True,
-            inventory_dark_ml >= required_dark if required_dark > 0 else True
+            red_ml >= required_red if required_red > 0 else True,
+            green_ml >= required_green if required_green > 0 else True,
+            blue_ml >= required_blue if required_blue > 0 else True,
+            dark_ml >= required_dark if required_dark > 0 else True
         ])
 
         if not can_create:
@@ -138,16 +122,16 @@ def get_bottle_plan():
 
         # Determine the maximum number of potions we can create with the current inventory
         max_potions = min(
-            (inventory_red_ml // required_red if required_red > 0 else MAX_SAME_POTION),
-            (inventory_green_ml // required_green if required_green > 0 else MAX_SAME_POTION),
-            (inventory_blue_ml // required_blue if required_blue > 0 else MAX_SAME_POTION),
-            (inventory_dark_ml // required_dark if required_dark > 0 else MAX_SAME_POTION),
+            (red_ml // required_red if required_red > 0 else MAX_SAME_POTION),
+            (green_ml // required_green if required_green > 0 else MAX_SAME_POTION),
+            (blue_ml // required_blue if required_blue > 0 else MAX_SAME_POTION),
+            (dark_ml // required_dark if required_dark > 0 else MAX_SAME_POTION),
             MAX_SAME_POTION
         )
         print(f"Maximum of {max_potions} '{name}' potions can be created based on current inventory.")
 
         # If we have abundant resources, create more potions
-        potion_count = max_potions if any(inventory > RESOURCE_THRESHOLD for inventory in [inventory_red_ml, inventory_green_ml, inventory_blue_ml, inventory_dark_ml]) else 1
+        potion_count = max_potions if any(inventory > RESOURCE_THRESHOLD for inventory in [red_ml, green_ml, blue_ml, dark_ml]) else 1
 
         if potion_count > 0:
             print(f"Planning to create {potion_count} of potion: {name}, SKU: {sku}")

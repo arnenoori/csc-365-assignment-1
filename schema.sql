@@ -10,6 +10,11 @@ create table
     num_dark_ml integer null default 0
   );
 
+-- initial game state:
+
+INSERT INTO global_inventory (gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml)
+VALUES (100, 0, 0, 0, 0);
+
 -- Version 3:
 
 -- cart_items table
@@ -84,8 +89,3 @@ create table
     foreign key (inventory_id) references global_inventory (id),
     foreign key (transaction_id) references inventory_transactions (id)
   );
-
--- Adding a foreign key to the global_inventory table
-alter table 
-  public.global_inventory
-add foreign key (potion_id) references potions(id);
