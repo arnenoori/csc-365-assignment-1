@@ -14,7 +14,7 @@ There are three primary actions that may unfold during these ticks:
 
 2. **Potion Creation**: Every alternate tick presents an opportunity to brew new potions. Each potion requires 100 ml of either red, green, blue, or dark liquid. You must have sufficient volume of the chosen color in your barrelled inventory to brew a potion.
 
-3. **Barrel Purchasing**: On every 12th tick, you have an opportunity to purchase additional barrels of various colors. Your API receives a catalog of barrels available for sale and should respond with your purchase decisions. The gold cost of each barrel is deducted from your balance upon purchase.
+3. **Barrel Purchasing**: On every alternate tick, you have an opportunity to purchase additional barrels of various colors. Your API receives a catalog of barrels available for sale and should respond with your purchase decisions. The gold cost of each barrel is deducted from your balance upon purchase.
 
 Part of the challenge in these interactions is you are responsible for keeping track of your gold and your various inventory levels. The [Consortium of Concotions and Charms](https://potion-exchange.vercel.app/) separately keeps an authoritiative record (which can be viewed under Shop stats).
 
@@ -113,7 +113,6 @@ I encouraged many of you to just use an in-memory structure to handle management
 ### Audit
 If you haven’t already, make sure the audit inventory endpoint correctly reflects your gold, number of potions, and number of mls.
 
-
 ## Version 4 - Ledgers
 
 In the fourth version of central coast cauldrons, you will ledgerize your database. Rather than updating inventory values (gold, ml, and potion amounts) directly, you will instead just record changes to values. When calculating the amount of inventory you have, you will instead SUM up your ledger on-the-fly. By doing so, you gain several new advantages:
@@ -158,3 +157,16 @@ SELECT SUM(change) AS balance
 FROM account_ledger_entries
 WHERE account_id = :bob_account_id;
 ```
+
+## Version 5 - Order Search
+
+This is the final version of your potion shop. You will now add search functionality to your backend that will power the search orders page on https://potion-exchange.vercel.app/.
+<img width="622" alt="image" src="https://github.com/jackalnom/centralcoastcauldrons/assets/26583819/9bd9cee7-973c-4cc5-9676-a0f874b6ce6d">
+
+In the latest pull of carts.py, it now contains a new search endpoint. Do not change the method signature of this endpoint, and ensure that the format of what you return matches the example JSON.
+
+Additionally, make sure you pull the latest server.py. It includes a CORS configuration that is necessary for the front-end to call your webservice.
+
+Once you've implemented the search endpoint, make sure you test your work using the search orders page mentioned above. Filtering, paging, and sorting must all work correctly to get full points on this assignment.
+
+As a reference, feel free to look at this lecture where I cover one way of implementing such a search functionality: https://observablehq.com/@calpoly-pierce/python-connectivity#cell-70.
