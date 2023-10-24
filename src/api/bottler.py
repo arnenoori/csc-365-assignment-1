@@ -102,7 +102,7 @@ def get_bottle_plan():
         if inventory is None:
             red_ml, green_ml, blue_ml, dark_ml = 0, 0, 0, 0
         else:
-            red_ml, green_ml, blue_ml, dark_ml = inventory
+            gold, red_ml, green_ml, blue_ml, dark_ml = inventory
 
         # Query catalog for potion recipes
         sql_query = """SELECT sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml FROM catalog"""
