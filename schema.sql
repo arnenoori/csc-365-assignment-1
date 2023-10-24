@@ -83,7 +83,7 @@ create table
 create table 
   public.inventory_ledger_entries (
     id bigint generated always as identity primary key,
-    inventory_id integer,
+    inventory_type varchar(255),
     transaction_id integer,
     change integer,
     foreign key (transaction_id) references inventory_transactions (id)

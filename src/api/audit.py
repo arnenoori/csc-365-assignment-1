@@ -21,7 +21,7 @@ def get_inventory():
     with db.engine.begin() as connection:
         sql_query = """
         SELECT 
-            (SELECT SUM(num_gold) FROM inventory_ledger_entries) AS gold,
+            (SELECT SUM(gold) FROM inventory_ledger_entries) AS gold,
             (SELECT SUM(num_red_ml) FROM inventory_ledger_entries) AS ml_in_red_barrels,
             (SELECT SUM(num_green_ml) FROM inventory_ledger_entries) AS ml_in_green_barrels,
             (SELECT SUM(num_blue_ml) FROM inventory_ledger_entries) AS ml_in_blue_barrels,

@@ -91,10 +91,10 @@ def get_bottle_plan():
         # Calculate the current inventory values
         sql_query = """
         SELECT 
-            (SELECT SUM(num_red_ml) FROM inventory_ledger_entries) AS red_ml,
-            (SELECT SUM(num_green_ml) FROM inventory_ledger_entries) AS green_ml,
-            (SELECT SUM(num_blue_ml) FROM inventory_ledger_entries) AS blue_ml,
-            (SELECT SUM(num_dark_ml) FROM inventory_ledger_entries) AS dark_ml
+            (SELECT SUM(red_ml) FROM inventory_ledger_entries) AS red_ml,
+            (SELECT SUM(green_ml) FROM inventory_ledger_entries) AS green_ml,
+            (SELECT SUM(blue_ml) FROM inventory_ledger_entries) AS blue_ml,
+            (SELECT SUM(dark_ml) FROM inventory_ledger_entries) AS dark_ml
         """
         inventory = connection.execute(sqlalchemy.text(sql_query)).first()
 
