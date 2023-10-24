@@ -61,12 +61,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     with db.engine.begin() as connection:
         # Calculate the current inventory values
         sql_query = """
-        SELECT 
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 1) AS gold,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 2) AS red_ml,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 3) AS green_ml,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 4) AS blue_ml,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 5) AS dark_ml
+            SELECT 
+                (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'gold') AS gold,
+                (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'red_ml') AS red_ml,
+                (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'green_ml') AS green_ml,
+                (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'blue_ml') AS blue_ml,
+                (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'dark_ml') AS dark_ml
         """
         inventory = connection.execute(sqlalchemy.text(sql_query)).first()
 

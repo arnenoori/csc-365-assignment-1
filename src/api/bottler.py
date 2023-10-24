@@ -68,13 +68,14 @@ def post_deliver_bottles(potions_delivered: List[PotionInventory]):
             """
             transaction_id = connection.execute(sqlalchemy.text(sql_query), {"description": f"Delivered potion: {potion}"}).scalar()
 
-            # Create ledger entries for each change in inventory
+        # Create ledger entries for each change in inventory
+            inventory_types = ['gold', 'red_ml', 'green_ml', 'blue_ml', 'dark_ml']
             for i, change in enumerate(potion.potion_type):
                 sql_query = """
-                INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
-                VALUES (:inventory_id, :transaction_id, :change)
+                INSERT INTO inventory_ledger_entries (inventory_type, transaction_id, change)
+                VALUES (:inventory_type, :transaction_id, :change)
                 """
-                connection.execute(sqlalchemy.text(sql_query), {"inventory_id": i+2, "transaction_id": transaction_id, "change": -change * quantity})
+                connection.execute(sqlalchemy.text(sql_query), {"inventory_type": inventory_types[i], "transaction_id": transaction_id, "change": -change * quantity})
 
             print(f"Delivered potion: {potion}")
 
