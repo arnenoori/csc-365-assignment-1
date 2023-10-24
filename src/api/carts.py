@@ -204,10 +204,10 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
 
         # Create ledger entry for the gold paid
         sql_query = """
-        INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
-        VALUES (:inventory_id, :transaction_id, :change)
+        INSERT INTO inventory_ledger_entries (inventory_type, transaction_id, change)
+        VALUES (:inventory_type, :transaction_id, :change)
         """
-        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 1, "transaction_id": transaction_id, "change": total_gold_paid})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_type": "gold", "transaction_id": transaction_id, "change": total_gold_paid})
 
     print(f"Checkout successful. Total potions bought: {total_potions_bought}, Total gold paid: {total_gold_paid}")
     return {"total_potions_bought": total_potions_bought, "total_gold_paid": total_gold_paid}

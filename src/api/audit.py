@@ -21,11 +21,11 @@ def get_inventory():
     with db.engine.begin() as connection:
         sql_query = """
         SELECT 
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 1) AS gold,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 2) AS ml_in_red_barrels,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 3) AS ml_in_green_barrels,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 4) AS ml_in_blue_barrels,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_id = 5) AS ml_in_dark_barrels
+            (SELECT SUM(num_gold) FROM inventory_ledger_entries) AS gold,
+            (SELECT SUM(num_red_ml) FROM inventory_ledger_entries) AS ml_in_red_barrels,
+            (SELECT SUM(num_green_ml) FROM inventory_ledger_entries) AS ml_in_green_barrels,
+            (SELECT SUM(num_blue_ml) FROM inventory_ledger_entries) AS ml_in_blue_barrels,
+            (SELECT SUM(num_dark_ml) FROM inventory_ledger_entries) AS ml_in_dark_barrels
         """
         result = connection.execute(sqlalchemy.text(sql_query))
         first_row = result.first()
