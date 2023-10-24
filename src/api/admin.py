@@ -37,15 +37,15 @@ def reset():
 
         # Create ledger entries for each change in inventory
         sql_query = """
-        INSERT INTO inventory_ledger_entries (inventory_id, transaction_id, change)
-        VALUES (:inventory_id, :transaction_id, :change)
+        INSERT INTO inventory_ledger_entries (inventory_type, transaction_id, change)
+        VALUES (:inventory_type, :transaction_id, :change)
         """
-        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 1, "transaction_id": transaction_id, "change": 100 - gold})
-        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 2, "transaction_id": transaction_id, "change": -num_red_ml})
-        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 3, "transaction_id": transaction_id, "change": -num_green_ml})
-        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 4, "transaction_id": transaction_id, "change": -num_blue_ml})
-        connection.execute(sqlalchemy.text(sql_query), {"inventory_id": 5, "transaction_id": transaction_id, "change": -num_dark_ml})
-
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_type": "gold", "transaction_id": transaction_id, "change": 100 - gold})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_type": "red_ml", "transaction_id": transaction_id, "change": -num_red_ml})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_type": "green_ml", "transaction_id": transaction_id, "change": -num_green_ml})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_type": "blue_ml", "transaction_id": transaction_id, "change": -num_blue_ml})
+        connection.execute(sqlalchemy.text(sql_query), {"inventory_type": "dark_ml", "transaction_id": transaction_id, "change": -num_dark_ml})
+        
         # Reset catalog quantity
         sql_query = """
         UPDATE catalog

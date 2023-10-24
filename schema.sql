@@ -86,6 +86,5 @@ create table
     inventory_id integer,
     transaction_id integer,
     change integer,
-    foreign key (inventory_id) references global_inventory (id),
     foreign key (transaction_id) references inventory_transactions (id)
   );
