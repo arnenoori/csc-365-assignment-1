@@ -84,6 +84,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 return barrel.ml_per_barrel  # assuming one barrel is bought, so not multiplying by quantity
         return 0
 
+    red_ml = red_ml if red_ml is not None else 0
+    green_ml = green_ml if green_ml is not None else 0
+    blue_ml = blue_ml if blue_ml is not None else 0
+
     if red_ml < 500 and gold > 0:
         red_ml += buy_potion([1, 0, 0, 0], 500 - red_ml)
     if green_ml < 500 and gold > 0:
