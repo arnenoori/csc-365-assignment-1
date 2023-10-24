@@ -46,7 +46,7 @@ def search_orders(
     Sort col is which column to sort by and sort order is the direction
     of the search. They default to searching by timestamp of the order
     in descending order.
-psql
+
     The response itself contains a previous and next page token (if
     such pages exist) and the results as an array of line items. Each
     line item contains the line item id (must be unique), item sku, 
@@ -54,29 +54,20 @@ psql
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
-    # Construct SQL query based on filter, sort, page, and page_size
-    sql_query = f"""
-    SELECT carts.id, carts.customer, cart_items.item_sku, cart_items.quantity
-    FROM carts
-    LEFT JOIN cart_items ON carts.id = cart_items.cart_id
-    WHERE carts.customer LIKE '%{customer_name}%' AND cart_items.item_sku LIKE '%{potion_sku}%'
-    ORDER BY {sort_col} {sort_order}
-    LIMIT 5 OFFSET {int(search_page) * 5}
-    """
 
-    # Execute SQL query and fetch results
-    with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text(sql_query))
-        results = [row._asdict() for row in result]
-
-    # Format results into JSON response
-    response = {
-        "previous": str(max(0, int(search_page) - 1)),
-        "next": str(int(search_page) + 1),
-        "results": results,
+    return {
+        "previous": "",
+        "next": "",
+        "results": [
+            {
+                "line_item_id": 1,
+                "item_sku": "1 oblivion potion",
+                "customer_name": "Scaramouche",
+                "line_item_total": 50,
+                "timestamp": "2021-01-01T00:00:00Z",
+            }
+        ],
     }
-
-    return response
 
 
 class NewCart(BaseModel):

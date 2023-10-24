@@ -139,7 +139,7 @@ def get_bottle_plan():
                 print(f"Planning to create {potion_count} of potion: {name}, SKU: {sku}")
 
                 # Add to the bottle plan without actually updating the database
-    bottle_plan.append({"potion_type": [required_red, required_green, required_blue, required_dark], "quantity": potion_count})
+                bottle_plan.append({"potion_type": [required_red, required_green, required_blue, required_dark], "quantity": potion_count})
 
     print("Final bottle plan:", bottle_plan)
     return bottle_plan
