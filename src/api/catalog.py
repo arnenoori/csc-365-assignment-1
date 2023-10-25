@@ -19,6 +19,7 @@ def get_catalog():
                 LEFT JOIN inventory_ledger_entries ile ON c.id = ile.transaction_id
                 GROUP BY c.sku, c.name, c.price, c.num_red_ml, c.num_green_ml, c.num_blue_ml, c.num_dark_ml
                 HAVING COALESCE(SUM(ile.change), 0) > 0
+                LIMIT 6 
             """
             result = connection.execute(sqlalchemy.text(sql_query))
             catalog = result.fetchall()
@@ -29,7 +30,7 @@ def get_catalog():
             "name": row[1],
             "quantity": row[2],
             "price": row[3],
-            "potion_type": [row[4], row[5], row[6], row[7]],  # constructing array in Python
+            "potion_type": [row[4], row[5], row[6], row[7]], 
         } for row in catalog]
 
     except sqlalchemy.exc.SQLAlchemyError as e:

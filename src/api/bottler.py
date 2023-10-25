@@ -93,10 +93,10 @@ def get_bottle_plan():
         sql_query = """
         SELECT 
             (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'gold') AS gold,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'red_ml') AS ml_in_red_barrels,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'green_ml') AS ml_in_green_barrels,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'blue_ml') AS ml_in_blue_barrels,
-            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'dark_ml') AS ml_in_dark_barrels
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'num_red_ml') AS ml_in_red_barrels,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'num_green_ml') AS ml_in_green_barrels,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'num_blue_ml') AS ml_in_blue_barrels,
+            (SELECT SUM(change) FROM inventory_ledger_entries WHERE inventory_type = 'num_dark_ml') AS ml_in_dark_barrels
         """
         inventory = connection.execute(sqlalchemy.text(sql_query)).first()
 
