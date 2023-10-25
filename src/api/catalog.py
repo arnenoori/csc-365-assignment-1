@@ -14,8 +14,10 @@ def get_catalog():
         # Fetch the catalog from the database
         with db.engine.begin() as connection:
             sql_query = """
-                SELECT sku, name, quantity, price, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml 
-                FROM catalog
+                SELECT c.sku, c.name, SUM(ile.change), c.price, c.num_red_ml, c.num_green_ml, c.num_blue_ml, c.num_dark_ml 
+                FROM catalog c
+                LEFT JOIN inventory_ledger_entries ile ON c.id = ile.transaction_id
+                GROUP BY c.sku, c.name, c.price, c.num_red_ml, c.num_green_ml, c.num_blue_ml, c.num_dark_ml
             """
             result = connection.execute(sqlalchemy.text(sql_query))
             catalog = result.fetchall()
