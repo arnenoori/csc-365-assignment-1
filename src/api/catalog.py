@@ -18,6 +18,7 @@ def get_catalog():
                 FROM catalog c
                 LEFT JOIN inventory_ledger_entries ile ON c.id = ile.transaction_id
                 GROUP BY c.sku, c.name, c.price, c.num_red_ml, c.num_green_ml, c.num_blue_ml, c.num_dark_ml
+                HAVING COALESCE(SUM(ile.change), 0) > 0
             """
             result = connection.execute(sqlalchemy.text(sql_query))
             catalog = result.fetchall()
