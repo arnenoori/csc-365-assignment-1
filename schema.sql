@@ -88,3 +88,78 @@ create table
     change integer,
     foreign key (transaction_id) references inventory_transactions (id)
   );
+
+
+-- Version 5:
+
+  -- Dummy customers
+
+WITH inserted AS (
+  INSERT INTO carts (customer)
+  VALUES 
+    ('Scaramouche')
+  RETURNING id
+)
+INSERT INTO cart_items (item_sku, quantity, cart_id)
+SELECT 
+  '1 oblivion potion', 
+  50, 
+  id AS cart_id
+FROM 
+  inserted;
+
+WITH inserted AS (
+  INSERT INTO carts (customer)
+  VALUES 
+    ('Cellar')
+  RETURNING id
+)
+INSERT INTO cart_items (item_sku, quantity, cart_id)
+SELECT 
+  'Pure Green Potion', 
+  70, 
+  id AS cart_id
+FROM 
+  inserted;
+
+WITH inserted AS (
+  INSERT INTO carts (customer)
+  VALUES 
+    ('Barlan')
+  RETURNING id
+)
+INSERT INTO cart_items (item_sku, quantity, cart_id)
+SELECT 
+  'Cyan Potion', 
+  41, 
+  id AS cart_id
+FROM 
+  inserted;
+
+WITH inserted AS (
+  INSERT INTO carts (customer)
+  VALUES 
+    ('Dellen')
+  RETURNING id
+)
+INSERT INTO cart_items (item_sku, quantity, cart_id)
+SELECT 
+  'Yellow Potion', 
+  21, 
+  id AS cart_id
+FROM 
+  inserted;
+
+WITH inserted AS (
+  INSERT INTO carts (customer)
+  VALUES 
+    ('Daedor')
+  RETURNING id
+)
+INSERT INTO cart_items (item_sku, quantity, cart_id)
+SELECT 
+  'Cyan Potion', 
+  166, 
+  id AS cart_id
+FROM 
+  inserted;
