@@ -72,7 +72,7 @@ def search_orders(
                 CASE WHEN :sort_col = 'timestamp' AND :sort_order = 'desc' THEN carts.created_at END DESC
         """
         result = connection.execute(sqlalchemy.text(sql_query), {"customer_name": f"%{customer_name}%", "potion_sku": f"%{potion_sku}%", "sort_col": sort_col, "sort_order": sort_order})
-        orders = [dict(row) for row in result]
+        orders = [{"item_sku": row[0], "customer": row[1], "quantity": row[2], "created_at": row[3]} for row in result]
     return {"previous": "", "next": "", "results": orders}
 
     return {
