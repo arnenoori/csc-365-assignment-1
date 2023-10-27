@@ -76,7 +76,7 @@ def search_orders(
             LIMIT :limit OFFSET :offset
         """
         result = connection.execute(sqlalchemy.text(sql_query), {"customer_name": f"%{customer_name}%", "potion_sku": f"%{potion_sku}%", "sort_col": sort_col, "sort_order": sort_order, "limit": items_per_page, "offset": offset})
-        orders = [{"item_sku": row[0], "customer": row[1], "quantity": row[2], "created_at": row[3]} for row in result]
+        orders = [{"item_sku": row[0], "customer_name": row[1], "line_item_total": row[2], "created_at": row[3]} for row in result]
 
     previous_page = search_page - 1 if search_page > 1 else None
     next_page = search_page + 1 if len(orders) == items_per_page else None

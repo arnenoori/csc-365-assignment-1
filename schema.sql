@@ -163,3 +163,17 @@ SELECT
   id AS cart_id
 FROM 
   inserted;
+
+WITH inserted AS (
+  INSERT INTO carts (customer)
+  VALUES 
+    ('Snow')
+  RETURNING id
+)
+INSERT INTO cart_items (item_sku, quantity, cart_id)
+SELECT 
+  'Purple Potion', 
+  250, 
+  id AS cart_id
+FROM 
+  inserted; 
