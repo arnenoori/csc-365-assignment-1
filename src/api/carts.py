@@ -26,7 +26,7 @@ class search_sort_order(str, Enum):
 def search_orders(
     customer_name: str = "",
     potion_sku: str = "",
-    search_page: str = "",
+    search_page: int = 1,
     sort_col: search_sort_options = search_sort_options.timestamp,
     sort_order: search_sort_order = search_sort_order.desc,
 ):
@@ -54,13 +54,16 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
+    items_per_page = 5
+    offset = (search_page - 1) * items_per_page
+
     with db.engine.begin() as connection:
         sql_query = f"""
-            SELECT cart_items.item_sku, carts.customer, cart_items.quantity, carts.created_at
+            SELECT cart_items.item_sku, carts.customer, cart_items.quantity, to_char(carts.created_at, 'MM/DD/YYYY, HH12:MI:SS PM') as created_at
             FROM carts
             JOIN cart_items ON carts.id = cart_items.cart_id
-            WHERE carts.customer LIKE :customer_name
-            AND cart_items.item_sku LIKE :potion_sku
+            WHERE carts.customer ILIKE :customer_name
+            AND cart_items.item_sku ILIKE :potion_sku
             ORDER BY 
                 CASE WHEN :sort_col = 'customer_name' AND :sort_order = 'asc' THEN carts.customer END ASC,
                 CASE WHEN :sort_col = 'customer_name' AND :sort_order = 'desc' THEN carts.customer END DESC,
@@ -70,10 +73,15 @@ def search_orders(
                 CASE WHEN :sort_col = 'line_item_total' AND :sort_order = 'desc' THEN cart_items.quantity END DESC,
                 CASE WHEN :sort_col = 'timestamp' AND :sort_order = 'asc' THEN carts.created_at END ASC,
                 CASE WHEN :sort_col = 'timestamp' AND :sort_order = 'desc' THEN carts.created_at END DESC
+            LIMIT :limit OFFSET :offset
         """
-        result = connection.execute(sqlalchemy.text(sql_query), {"customer_name": f"%{customer_name}%", "potion_sku": f"%{potion_sku}%", "sort_col": sort_col, "sort_order": sort_order})
+        result = connection.execute(sqlalchemy.text(sql_query), {"customer_name": f"%{customer_name}%", "potion_sku": f"%{potion_sku}%", "sort_col": sort_col, "sort_order": sort_order, "limit": items_per_page, "offset": offset})
         orders = [{"item_sku": row[0], "customer": row[1], "quantity": row[2], "created_at": row[3]} for row in result]
-    return {"previous": "", "next": "", "results": orders}
+
+    previous_page = search_page - 1 if search_page > 1 else None
+    next_page = search_page + 1 if len(orders) == items_per_page else None
+
+    return {"previous": previous_page, "next": next_page, "results": orders}
 
     return {
         "previous": "",
