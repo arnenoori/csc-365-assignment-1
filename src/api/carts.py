@@ -59,7 +59,7 @@ def search_orders(
 
     with db.engine.begin() as connection:
         sql_query = f"""
-            SELECT cart_items.item_sku, carts.customer, cart_items.quantity, to_char(carts.created_at, 'MM/DD/YYYY, HH12:MI:SS PM') as created_at
+            SELECT cart_items.item_sku, carts.customer, cart_items.quantity, to_char(carts.created_at::timestamp, 'MM/DD/YYYY, HH12:MI:SS PM') as created_at
             FROM carts
             JOIN cart_items ON carts.id = cart_items.cart_id
             WHERE carts.customer ILIKE :customer_name
